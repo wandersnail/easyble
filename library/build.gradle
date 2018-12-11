@@ -38,6 +38,7 @@ artifacts {
 }
 
 publish {
+    repoName="android"//仓库名
     userOrg = 'wandersnail' //bintray.com用户名  
     groupId = 'com.github.wandersnail' //jcenter上的路径  
     artifactId = 'easyble' //项目名称  

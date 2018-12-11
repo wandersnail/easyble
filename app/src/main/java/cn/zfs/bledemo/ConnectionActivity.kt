@@ -5,9 +5,14 @@ import android.os.Bundle
 import android.os.Looper
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import com.snail.easyble.annotation.InvokeThread
+import com.snail.easyble.annotation.RunOn
 import com.snail.easyble.callback.CharacteristicChangedCallback
 import com.snail.easyble.callback.RequestCallback
-import com.snail.easyble.core.*
+import com.snail.easyble.core.Ble
+import com.snail.easyble.core.Connection
+import com.snail.easyble.core.ConnectionConfig
+import com.snail.easyble.core.Device
 import com.snail.easyble.event.Events
 import com.snail.easyble.util.BleUtils
 import com.zfs.commons.utils.ToastUtils
@@ -72,13 +77,13 @@ class ConnectionActivity : AppCompatActivity() {
                 tvState.text = "连接成功，并成功发现服务"
                 val connection = Ble.getInstance().getConnection(e.device)
                 connection.setCharacteristicChangedCallback(object : CharacteristicChangedCallback {
-                    @CallOnUiThread
+                    @InvokeThread(RunOn.POSTING)
                     override fun onCharacteristicChanged(characteristic: BluetoothGattCharacteristic) {
                         Ble.println(javaClass, Log.ERROR, "数据：${BleUtils.bytesToHexString(characteristic.value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
                 })
                 connection.toggleNotification("", UUID_SERVICE, UUID_NOTIFICATION_CHAR, true, object : RequestCallback<Events.NotificationChanged> {
-                    @CallOnBackgroundThread
+                    @InvokeThread(RunOn.MAIN)
                     override fun onSuccess(data: Events.NotificationChanged) {
                         Ble.println(javaClass, Log.ERROR, "RequestCallback onSuccess, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
@@ -88,7 +93,7 @@ class ConnectionActivity : AppCompatActivity() {
                     }
                 })
                 connection.writeCharacteristic("", UUID_SERVICE, UUID_RX_CHAR, byteArrayOf(0xa5.toByte()), object : RequestCallback<Events.CharacteristicWrite> {
-                    @CallOnUiThread
+                    @InvokeThread(RunOn.BACKGROUND)
                     override fun onSuccess(data: Events.CharacteristicWrite) {
                         Ble.println(javaClass, Log.ERROR, "RequestCallback onSuccess, 数据：${BleUtils.bytesToHexString(data.characteristic.value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
