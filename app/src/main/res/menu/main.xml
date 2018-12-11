@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:tools="http://schemas.android.com/tools">
+    <item
+        android:id="@+id/menuNew"
+        android:title="新扫描器"
+        android:orderInCategory="100"
+        app:showAsAction="ifRoom|withText"
+        tools:ignore="HardcodedText"/>
+    <item
+        android:id="@+id/menuOld"
+        android:title="旧扫描器"
+        android:orderInCategory="101"
+        app:showAsAction="ifRoom|withText"
+        tools:ignore="HardcodedText"/>
+</menu>
