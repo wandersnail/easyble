@@ -20,7 +20,7 @@ allprojects {
 ```
 dependencies {
 	...
-	implementation 'com.github.fszeng2011:easyble:1.0.0'}
+	implementation 'com.github.wandersnail:easyble:1.0.0'}
 }
 ```
 
