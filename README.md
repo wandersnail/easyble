@@ -20,7 +20,8 @@ allprojects {
 ```
 dependencies {
 	...
-	implementation 'com.github.wandersnail:easyble:1.0.0'}
+	implementation 'com.github.wandersnail:easyble:1.0.0'
+	implementation 'org.greenrobot:eventbus:3.1.1'
 }
 ```
 
