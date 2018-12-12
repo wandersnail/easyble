@@ -123,6 +123,14 @@ class ConnectionActivity : AppCompatActivity() {
                         Ble.println(javaClass, Log.DEBUG, "RequestCallback onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
                 })
+                
+                connection.changeMtu("", 256, object : RequestCallback<Events.MtuChanged> {
+                    override fun onSuccess(data: Events.MtuChanged) {
+                    }
+
+                    override fun onFail(requestFailed: Events.RequestFailed) {
+                    }
+                })
             }
             Connection.STATE_RELEASED -> {
                 tvState.text = "连接已释放"
