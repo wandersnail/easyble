@@ -6,7 +6,7 @@
 
 ## 使用
 
-1. module的build.gradle中的添加依赖，同步后通常就可以用了：
+1. module的build.gradle中的添加依赖，自行修改为最新版本，同步后通常就可以用了：
 ```
 dependencies {
 	...
