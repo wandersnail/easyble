@@ -34,7 +34,7 @@ dependencies {
 - 支持请求延时及发送延时设置
 - 支持分包大小设置、最大传输单元设置
 - 支持注册和取消通知监听，使用EventBus通知状态及数据
-- 支持回调方式，EventBus和回调只能取其一
+- 支持回调方式，支持使用注解@InvokeThread控制回调线程。注意：EventBus和回调只能取其一！
 - 支持发送设置（是否等待发送结果回调再发送下一包）
 - 支持写入模式设置
 - 支持设置连接的传输方式
@@ -42,11 +42,11 @@ dependencies {
 
 ## 详细使用方法
 
-[https://blog.csdn.net/fszeng2011/article/details/80999342](https://blog.csdn.net/fszeng2011/article/details/80999342 "BLE核心库使用")	
+[![](https://img.shields.io/badge/Tutorial-CSDN-red.svg)](https://blog.csdn.net/fszeng2011/article/details/80999342)	
 
 ## 基于此库的BLE调试app
-[http://app.mi.com/details?id=cn.zfs.bledebugger](http://app.mi.com/details?id=cn.zfs.bledebugger "小米应用商店")
-
+[![](https://img.shields.io/badge/Download-App%20Store-yellow.svg)](http://app.mi.com/details?id=cn.zfs.bledebugger)
+[![](https://img.shields.io/badge/Download-APK-blue.svg)](https://github.com/wandersnail/easyble/releases/download/1.0.0/bledebugger_v1.15.apk)
 
 ## 调试app截图
 ![image](https://github.com/wandersnail/easyble/blob/master/screenshot/0d12b411b69c21f97460983f0e22280e5ec424032.jpg)
