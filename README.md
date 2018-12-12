@@ -1,4 +1,4 @@
-# BLE蓝牙调试助手
+# Android BLE开发框架
 
 ## 代码托管
 [![](https://jitpack.io/v/wandersnail/easyble.svg)](https://jitpack.io/#wandersnail/easyble)
@@ -6,7 +6,16 @@
 
 ## 使用
 
-1. 在project的build.gradle里的repositories添加内容，最好两个都加上，有时jitpack会抽风，同步不下来。
+1. module的build.gradle中的添加依赖，同步后通常就可以用了：
+```
+dependencies {
+	...
+	implementation 'com.github.wandersnail:easyble:1.0.0'
+	implementation 'org.greenrobot:eventbus:3.1.1'
+}
+```
+
+2. 如果从jcenter下载失败。在project的build.gradle里的repositories添加内容，最好两个都加上，有时jitpack会抽风，同步不下来。添加完再次同步即可。
 ```
 allprojects {
 	repositories {
@@ -14,14 +23,6 @@ allprojects {
 		maven { url 'https://jitpack.io' }
 		maven { url 'https://dl.bintray.com/wandersnail/android/' }
 	}
-}
-```
-2. module的build.gradle中的添加依赖：
-```
-dependencies {
-	...
-	implementation 'com.github.wandersnail:easyble:1.0.0'
-	implementation 'org.greenrobot:eventbus:3.1.1'
 }
 ```
 
