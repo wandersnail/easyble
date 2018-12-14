@@ -210,7 +210,7 @@ public class Ble {
     private boolean checkInitStateAndContext() {
         if (!isInited) {
             if (!tryAutoInit()) {
-                new Exception("Ble需要初始化!!!!").printStackTrace();
+                new Exception("The SDK has not been initialized, make sure to call Ble.getInstance().initialize() first.").printStackTrace();
                 return false;
             }
         } else if (context == null) {
