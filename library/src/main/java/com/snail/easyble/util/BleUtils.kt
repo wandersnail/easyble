@@ -1,6 +1,11 @@
 package com.snail.easyble.util
 
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.*
+
+
+
 
 /**
  * 描述: 工具类
@@ -135,4 +140,24 @@ object BleUtils {
         }
         return bytes
     }
+
+    /**
+     * 16-bit Service Class UUIDs或32-bit Service Class UUIDs
+     */
+    fun generateFromBaseUuid(paramLong: Long): UUID {
+        return UUID(4096L + (paramLong shl 32), -9223371485494954757L)
+    }
+
+    /**
+     * 128-bit Service Class UUIDs
+     */
+    fun generateBluetoothUuid(bytes: ByteArray): UUID {
+        if (bytes.size != 8) {
+            throw IllegalArgumentException("ByteArray's size must be 8")
+        }
+        val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        val lsb = buffer.long
+        val msb = buffer.long
+        return UUID(msb, lsb)
+    } 
 }

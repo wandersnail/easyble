@@ -10,54 +10,32 @@ import android.os.Parcelable
  * 作者: zengfansheng
  */
 class Device : Comparable<Device>, Cloneable, Parcelable {
-    /**
-     * 原始设备
-     */
+    /** 原始设备 */
     var originalDevice: BluetoothDevice? = null
-    /**
-     * 广播数据
-     */
+    /** 广播数据 */
     var scanRecord: ByteArray? = null
-    /**
-     * 设备名称
-     */
+    /** 设备名称 */
     var name = ""
-    /**
-     * 设备id
-     */
+    /** 设备id */
     var devId = ""
-    /**
-     * 设备地址
-     */
+    /** 设备地址 */
     var addr = ""
-    /**
-     * 固件版本
-     */
+    /** 固件版本 */
     var firmware = ""
-    /**
-     * 硬件版本
-     */
+    /** 硬件版本 */
     var hardware = ""
-    /**
-     * 设备类型
-     */
+    /** 设备类型 */
     var type = -1
-    /**
-     * 电量
-     */
+    /** 电量 */
     var battery = -1
-    /**
-     * 信号强度
-     */
+    /** 信号强度 */
     var rssi = -1000
-    /**
-     * 连接状态
-     */
+    /** 连接状态 */
     var connectionState = IConnection.STATE_DISCONNECTED
-    /**
-     * 配对状态
-     */
+    /** 配对状态 */
     var bondState = 0
+    /** 是否可连接，只在API 26及以上可获取 */
+    var isConnectable: Boolean? = null
 
     val isConnected: Boolean
         get() = connectionState == IConnection.STATE_SERVICE_DISCOVERED

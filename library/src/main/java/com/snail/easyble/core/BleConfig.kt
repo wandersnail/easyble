@@ -9,7 +9,7 @@ import android.bluetooth.le.ScanSettings
  */
 class BleConfig {
     /** 扫描过滤器 */
-    var scanHandler: IScanHandler? = null
+    var scanHandler: ScanHandler? = null
         private set
     /** 连接进行配对的控制 */
     var bondController: IBondController? = null
@@ -33,10 +33,10 @@ class BleConfig {
     /**
      * 设置扫描过滤器
      *
-     * @param handler 扫描结果处理
+     * @param filter 扫描结果处理
      */
-    fun setScanHandler(handler: IScanHandler): BleConfig {
-        scanHandler = handler
+    fun setScanHandler(filter: ScanHandler): BleConfig {
+        scanHandler = filter
         return this
     }
 

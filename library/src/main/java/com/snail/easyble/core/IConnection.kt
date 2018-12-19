@@ -86,5 +86,7 @@ interface IConnection {
         const val CONNECT_FAIL_TYPE_UNSPECIFIED_MAC_ADDRESS = 1
         /** 达到最大重连次数  */
         const val CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION = 2
+        /** 不可连接设备  */
+        const val CONNECT_FAIL_TYPE_NON_CONNECTABLE = 3
     }
 }

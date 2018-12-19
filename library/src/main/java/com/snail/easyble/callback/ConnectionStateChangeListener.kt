@@ -16,7 +16,7 @@ interface ConnectionStateChangeListener {
      * - [IConnection.STATE_DISCONNECTED]
      * - [IConnection.STATE_CONNECTING]
      * - [IConnection.STATE_SCANNING]
-     * - [IConnection.STATE_CONNECTED]<br></br>
+     * - [IConnection.STATE_CONNECTED]
      * - [IConnection.STATE_SERVICE_DISCOVERING]
      * - [IConnection.STATE_SERVICE_DISCOVERED]
      */
