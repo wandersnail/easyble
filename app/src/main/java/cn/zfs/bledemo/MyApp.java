@@ -3,7 +3,8 @@ package cn.zfs.bledemo;
 
 import android.app.Application;
 
-import com.zfs.commons.AppHolder;
+import com.snail.commons.AppHolder;
+import com.snail.easyble.core.Ble;
 
 
 /**
@@ -17,5 +18,6 @@ public class MyApp extends Application {
     public void onCreate() {
         super.onCreate();
         AppHolder.init(this);
+        Ble.Companion.getInstance().initialize(this);
     }
 }

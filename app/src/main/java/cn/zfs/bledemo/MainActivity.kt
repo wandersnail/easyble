@@ -1,5 +1,6 @@
 package cn.zfs.bledemo
 
+import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.le.ScanSettings
 import android.content.Context
@@ -8,22 +9,25 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.support.v4.content.ContextCompat
+import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
+import com.snail.commons.base.BaseHolder
+import com.snail.commons.base.BaseListAdapter
+import com.snail.commons.entity.PermissionsRequester
+import com.snail.commons.utils.PreferencesUtils
+import com.snail.commons.utils.ToastUtils
 import com.snail.easyble.callback.ScanListener
 import com.snail.easyble.core.Ble
 import com.snail.easyble.core.BleLogger
 import com.snail.easyble.core.Device
-import com.zfs.commons.base.BaseHolder
-import com.zfs.commons.base.BaseListAdapter
-import com.zfs.commons.utils.PreferencesUtils
-import com.zfs.commons.utils.ToastUtils
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlin.system.exitProcess
 
-class MainActivity : CheckPermissionsActivity() {
+class MainActivity : AppCompatActivity() {
+    private var permissionsRequester: PermissionsRequester? = null
     private var scanning = false
     private var listAdapter: ListAdapter? = null
     private val devList = ArrayList<Device>()
@@ -31,38 +35,58 @@ class MainActivity : CheckPermissionsActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        initialize()
         initViews()     
-        Ble.getInstance().setLogPrintLevel(BleLogger.ALL)//输出日志
-        Ble.getInstance().addScanListener(scanListener)
-        Ble.getInstance().bleConfig.isAcceptSysConnectedDevice = false
-        Ble.getInstance().bleConfig.isHideNonBleDevice = true
-        Ble.getInstance().bleConfig.isUseBluetoothLeScanner = PreferencesUtils.getBoolean(Consts.SP_KEY_USE_NEW_SCANNER, true)
+        Ble.instance.setLogPrintLevel(BleLogger.ALL)//输出日志
+        Ble.instance.addScanListener(scanListener)
+        Ble.instance.bleConfig.setAcceptSysConnectedDevice(false)
+        Ble.instance.bleConfig.setHideNonBleDevice(true)
+        Ble.instance.bleConfig.setUseBluetoothLeScanner(PreferencesUtils.getBoolean(Consts.SP_KEY_USE_NEW_SCANNER, true))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            Ble.getInstance().bleConfig.scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+            Ble.instance.bleConfig.setScanSettings(ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build())
         }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.main, menu)
-        menu?.findItem(R.id.menuOld)?.isVisible = Ble.getInstance().bleConfig.isUseBluetoothLeScanner
-        menu?.findItem(R.id.menuNew)?.isVisible = !Ble.getInstance().bleConfig.isUseBluetoothLeScanner
-        ToastUtils.showShort("当前使用的是: ${if (Ble.getInstance().bleConfig.isUseBluetoothLeScanner) "新" else "旧"}扫描器")
+        menu?.findItem(R.id.menuOld)?.isVisible = Ble.instance.bleConfig.isUseBluetoothLeScanner
+        menu?.findItem(R.id.menuNew)?.isVisible = !Ble.instance.bleConfig.isUseBluetoothLeScanner
+        ToastUtils.showShort("当前使用的是: ${if (Ble.instance.bleConfig.isUseBluetoothLeScanner) "新" else "旧"}扫描器")
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
             R.id.menuOld -> {//使用旧扫描器
-                Ble.getInstance().bleConfig.isUseBluetoothLeScanner = false
+                Ble.instance.bleConfig.setUseBluetoothLeScanner(false)
                 PreferencesUtils.putBoolean(Consts.SP_KEY_USE_NEW_SCANNER, false)
             }
             R.id.menuNew -> {//使用新扫描器
-                Ble.getInstance().bleConfig.isUseBluetoothLeScanner = true
+                Ble.instance.bleConfig.setUseBluetoothLeScanner(true)
                 PreferencesUtils.putBoolean(Consts.SP_KEY_USE_NEW_SCANNER, true)
             }
         }
         invalidateOptionsMenu()
         return true
+    }
+
+    private fun initialize() {
+        //动态申请权限
+        permissionsRequester = PermissionsRequester(this)
+        permissionsRequester?.setOnRequestResultListener { 
+            if (it.isEmpty()) {
+                
+            }
+        }
+        permissionsRequester?.check(getNeedPermissions())
+    }
+
+    //需要进行检测的权限
+    private fun getNeedPermissions(): List<String> {
+        val list = java.util.ArrayList<String>()
+        list.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        list.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        return list
     }
     
     private fun initViews() {
@@ -75,8 +99,8 @@ class MainActivity : CheckPermissionsActivity() {
             startActivity(i)
         }
         refreshLayout.setOnRefreshListener {
-            if (Ble.getInstance().isInitialized) {
-                Ble.getInstance().stopScan()
+            if (Ble.instance.isInitialized) {
+                Ble.instance.stopScan()
                 doStartScan()
             }
         }
@@ -84,8 +108,8 @@ class MainActivity : CheckPermissionsActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (Ble.getInstance().isInitialized) {
-            if (Ble.getInstance().isBluetoothAdapterEnabled) {
+        if (Ble.instance.isInitialized) {
+            if (Ble.instance.isBluetoothAdapterEnabled) {
                 if (!refreshLayout.isRefreshing) {
                     refreshLayout.isRefreshing = true
                 }
@@ -98,8 +122,8 @@ class MainActivity : CheckPermissionsActivity() {
     
     override fun onPause() {
         super.onPause()
-        if (Ble.getInstance().isInitialized) {
-            Ble.getInstance().stopScan()
+        if (Ble.instance.isInitialized) {
+            Ble.instance.stopScan()
         }
     }
     
@@ -162,7 +186,7 @@ class MainActivity : CheckPermissionsActivity() {
     private fun doStartScan() {
         listAdapter?.clear()
         layoutEmpty.visibility = View.VISIBLE
-        Ble.getInstance().startScan()
+        Ble.instance.startScan()
     }
 
     private val scanListener = object : ScanListener {
@@ -186,14 +210,8 @@ class MainActivity : CheckPermissionsActivity() {
         }
     }
     
-    override fun onPermissionsRequestResult(hasPermission: Boolean) {
-        if (hasPermission) {
-            Ble.getInstance().initialize(this, null)
-        }
-    }
-
     override fun onDestroy() {    
-        Ble.getInstance().release()
+        Ble.instance.release()
         super.onDestroy()
         exitProcess(0)
     }
