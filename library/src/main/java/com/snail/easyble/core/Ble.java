@@ -2,6 +2,7 @@ package com.snail.easyble.core;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.Application;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -60,7 +61,7 @@ public class Ble {
     private EventBus publisher;
     private BleLogger logger;
     private ExecutorService executorService;
-    private Context context;
+    private Application app;
 
     private Ble() {
         bleConfig = new BleConfig();
@@ -93,20 +94,20 @@ public class Ble {
             acThreadMethod.setAccessible(true);
             Object acThread = acThreadMethod.invoke(null);
             Method appMethod = acThread.getClass().getMethod("getApplication");
-            context = (Context) appMethod.invoke(acThread);
+            app = (Application) appMethod.invoke(acThread);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     Context getContext() {
-        if (context == null) {
+        if (app == null) {
             tryGetContext();
-            if (context != null) {
-                initialize(context, null);
+            if (app != null) {
+                initialize(app);
             }
         }
-        return context;
+        return app;
     }
 
     /**
@@ -143,21 +144,61 @@ public class Ble {
     }
 
     /**
+     * 必须先初始化，只需一次
+     *
+     * @param app 上下文
+     */
+    public synchronized boolean initialize(@NonNull Application app) {
+        if (isInited) {
+            return true;
+        }
+        //检查手机是否支持BLE
+        if (!app.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+            return false;
+        }
+        //获取蓝牙管理器
+        BluetoothManager bluetoothManager = (BluetoothManager) app.getSystemService(Context.BLUETOOTH_SERVICE);
+        if (bluetoothManager == null || bluetoothManager.getAdapter() == null) {
+            return false;
+        }
+        bluetoothAdapter = bluetoothManager.getAdapter();
+        //监听蓝牙开关变化
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        app.registerReceiver(receiver, filter);
+        isInited = true;
+        return true;
+    }
+
+    /**
      * 必须先初始化
      *
-     * @param context  上下文
+     * @param context  上下文，需是Application
      * @param callback 初始化结果回调
+     * @deprecated 此方法后续会删除，使用 {@link #initialize(Application)}替代
      */
-    public void initialize(@NonNull Context context, final InitCallback callback) {
-        if (this.context == null) {
-            synchronized (this) {
-                if (this.context == null) {
-                    this.context = context.getApplicationContext();
-                }
+    @Deprecated
+    public synchronized void initialize(@NonNull Context context, final InitCallback callback) {
+        if (isInited) {
+            if (callback != null) {
+                mainThreadHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onSuccess();
+                    }
+                });
+            }
+            return;
+        }
+        if (app == null) {
+            if (context instanceof Application) {
+                app = (Application) context;
+            } else {
+                throw new IllegalArgumentException("Parameter context must be the instance of Application!");
             }
         }
         //检查手机是否支持BLE
-        if (!this.context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+        if (!app.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             if (callback != null) {
                 mainThreadHandler.post(new Runnable() {
                     @Override
@@ -169,8 +210,8 @@ public class Ble {
             return;
         }
         //获取蓝牙管理器
-        BluetoothManager bluetoothManager = (BluetoothManager) this.context.getSystemService(Context.BLUETOOTH_SERVICE);
-        if (bluetoothManager == null) {
+        BluetoothManager bluetoothManager = (BluetoothManager) app.getSystemService(Context.BLUETOOTH_SERVICE);
+        if (bluetoothManager == null || bluetoothManager.getAdapter() == null) {
             if (callback != null) {
                 mainThreadHandler.post(new Runnable() {
                     @Override
@@ -182,20 +223,10 @@ public class Ble {
             return;
         }
         bluetoothAdapter = bluetoothManager.getAdapter();
-        //未初始化过才注册，保证广播注册和取消注册成对
-        if (!isInited) {
-            synchronized (this) {
-                if (!isInited) {
-                    IntentFilter filter = new IntentFilter();
-                    filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-                    try {
-                        this.context.registerReceiver(receiver, filter);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
+        //监听蓝牙开关变化
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        app.registerReceiver(receiver, filter);
         isInited = true;
         if (callback != null) {
             mainThreadHandler.post(new Runnable() {
@@ -210,10 +241,10 @@ public class Ble {
     private boolean checkInitStateAndContext() {
         if (!isInited) {
             if (!tryAutoInit()) {
-                new Exception("The SDK has not been initialized, make sure to call Ble.getInstance().initialize() first.").printStackTrace();
+                new Exception("The SDK has not been initialized, make sure to call Ble.getInstance().initialize(Application) first.").printStackTrace();
                 return false;
             }
-        } else if (context == null) {
+        } else if (app == null) {
             return tryAutoInit();
         }
         return true;
@@ -221,8 +252,8 @@ public class Ble {
 
     private boolean tryAutoInit() {
         tryGetContext();
-        if (context != null) {
-            initialize(context, null);
+        if (app != null) {
+            initialize(app);
         }
         return isInited;
     }
@@ -235,16 +266,6 @@ public class Ble {
             stopScan();
             scanListeners.clear();
             releaseAllConnections();//释放所有连接
-            synchronized (this) {
-                if (isInited) {
-                    try {
-                        context.unregisterReceiver(receiver);//取消注册蓝牙状态广播接收者
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            isInited = false;
         }
     }
 
@@ -275,21 +296,21 @@ public class Ble {
 
     //是否缺少定位权限
     private boolean noLocationPermission() {
-        return (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context,
+        return (ContextCompat.checkSelfPermission(app, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(app,
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED);
     }
 
     //判断位置服务是否打开
     private boolean isLocationEnabled() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+            LocationManager locationManager = (LocationManager) app.getSystemService(Context.LOCATION_SERVICE);
             if (locationManager != null) {
                 return locationManager.isLocationEnabled();
             }
         } else {
             try {
-                int locationMode = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.LOCATION_MODE);
+                int locationMode = Settings.Secure.getInt(app.getContentResolver(), Settings.Secure.LOCATION_MODE);
                 return locationMode != Settings.Secure.LOCATION_MODE_OFF;
             } catch (Settings.SettingNotFoundException e) {
                 e.printStackTrace();
@@ -302,7 +323,7 @@ public class Ble {
      * 是否已初始化过或上下文为空了，需要重新初始化了
      */
     public boolean isInitialized() {
-        return isInited && context != null;
+        return isInited && app != null;
     }
 
     public void postEvent(@NonNull Object event) {

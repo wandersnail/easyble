@@ -6,7 +6,7 @@ package com.snail.easyble.callback;
  * 作者: zengfansheng
  */
 public interface InitCallback {    
-    /** BluetoothManager初始化失败 */
+    /** BluetoothManager或BluetoothAdapter无法获取到 */
     int ERROR_INIT_FAIL = 1;
     
     /** 不支持BLE */
