@@ -5,7 +5,7 @@ package com.snail.easyble.core
  * 时间: 2018/8/5 18:28
  * 作者: zengfansheng
  */
-class BleConfig {
+open class BleConfig {
     /** 扫描过滤器 */
     var scanConfig: ScanConfig = ScanConfig()
         private set

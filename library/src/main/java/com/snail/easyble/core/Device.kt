@@ -9,7 +9,7 @@ import android.os.Parcelable
  * 时间: 2018/4/11 15:00
  * 作者: zengfansheng
  */
-class Device : Comparable<Device>, Cloneable, Parcelable {
+open class Device : Comparable<Device>, Cloneable, Parcelable {
     /** 原始设备 */
     var originalDevice: BluetoothDevice? = null
     /** 广播数据 */
