@@ -85,50 +85,54 @@ class ConnectionActivity : AppCompatActivity() {
                 connection?.toggleNotification("", UUID_SERVICE, UUID_NOTIFICATION_CHAR, true, object : RequestCallback<Events.NotificationChanged> {
                     @InvokeThread(RunOn.MAIN)
                     override fun onSuccess(data: Events.NotificationChanged) {
-                        Ble.println(javaClass, Log.ERROR, "RequestCallback onSuccess, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                        Ble.println(javaClass, Log.ERROR, "RequestCallback toggleNotification onSuccess, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
 
                     override fun onFail(requestFailed: Events.RequestFailed) {
-                        Ble.println(javaClass, Log.ERROR, "RequestCallback onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                        Ble.println(javaClass, Log.ERROR, "RequestCallback toggleNotification onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
                 })
                 connection?.writeCharacteristic("", UUID_SERVICE, UUID_RX_CHAR, byteArrayOf(0xa5.toByte()), object : RequestCallback<Events.CharacteristicWrite> {
                     @InvokeThread(RunOn.BACKGROUND)
                     override fun onSuccess(data: Events.CharacteristicWrite) {
-                        Ble.println(javaClass, Log.ERROR, "RequestCallback onSuccess, 数据：${BleUtils.bytesToHexString(data.characteristic.value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                        Ble.println(javaClass, Log.ERROR, "RequestCallback writeCharacteristic onSuccess, 数据：${BleUtils.bytesToHexString(data.characteristic.value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
 
                     override fun onFail(requestFailed: Events.RequestFailed) {
-                        Ble.println(javaClass, Log.ERROR, "RequestCallback onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                        Ble.println(javaClass, Log.ERROR, "RequestCallback writeCharacteristic onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
                 })
                 
                 connection?.readRssi("", object : RequestCallback<Events.RemoteRssiRead> {
 
                     override fun onSuccess(data: Events.RemoteRssiRead) {
-                        Ble.println(javaClass, Log.ERROR, "RequestCallback onSuccess, rssi: ${data.rssi}")
+                        Ble.println(javaClass, Log.ERROR, "RequestCallback readRssi onSuccess, rssi: ${data.rssi}")
                     }
 
                     override fun onFail(requestFailed: Events.RequestFailed) {
-                        Ble.println(javaClass, Log.ERROR, "RequestCallback onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                        Ble.println(javaClass, Log.ERROR, "RequestCallback readRssi onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
                 })
                 
                 connection?.readCharacteristic("", UUID_SERVICE_1, UUID_READ, object : RequestCallback<Events.CharacteristicRead> {
                     override fun onSuccess(data: Events.CharacteristicRead) {
-                        Ble.println(javaClass, Log.ERROR, "RequestCallback onSuccess, Device Name: ${String(data.characteristic.value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                        Ble.println(javaClass, Log.ERROR, "RequestCallback readCharacteristic onSuccess, Device Name: ${String(data.characteristic.value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
 
                     override fun onFail(requestFailed: Events.RequestFailed) {
-                        Ble.println(javaClass, Log.DEBUG, "RequestCallback onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                        Ble.println(javaClass, Log.DEBUG, "RequestCallback readCharacteristic onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
                 })
                 
                 connection?.changeMtu("", 256, object : RequestCallback<Events.MtuChanged> {
+                    @InvokeThread(RunOn.MAIN)
                     override fun onSuccess(data: Events.MtuChanged) {
+                        Ble.println(javaClass, Log.ERROR, "RequestCallback changeMtu onSuccess, mtu: ${data.mtu}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
 
+                    @InvokeThread(RunOn.MAIN)
                     override fun onFail(requestFailed: Events.RequestFailed) {
+                        Ble.println(javaClass, Log.ERROR, "RequestCallback changeMtu onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
                 })
             }

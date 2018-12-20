@@ -28,12 +28,9 @@ import java.util.*
  * 时间: 2018/12/19 20:11
  * 作者: zengfansheng
  */
-internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private val mainThreadHandler: Handler, private val config: BleConfig) {
-    /**
-     * 是否正在扫描
-     */
-    var isScanning: Boolean = false
-        private set
+internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private val mainThreadHandler: Handler) {
+    //是否正在扫描
+    private var isScanning = false
     private var bleScanner: BluetoothLeScanner? = null
     private var scanCallback: ScanCallback? = null
     private var leScanCallback: BluetoothAdapter.LeScanCallback? = null
@@ -55,7 +52,11 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
             }
         }
     }
-    
+        
+    private fun getScanConfig(): ScanConfig {
+        return Ble.instance.bleConfig.scanConfig
+    }
+        
     /**
      * 添加扫描监听器
      */
@@ -108,7 +109,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
                     isConnectedMethod.isAccessible = true
                     val isConnected = isConnectedMethod.invoke(device) as Boolean
                     if (isConnected) {
-                        resultCallback(device, 0, null)
+                        parseScanResult(device, 0, null, null)                        
                     }
                 }
             }
@@ -138,21 +139,21 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
             isScanning = true
         }
         handleScanCallback(true, null, -1, "")
-        if (config.isAcceptSysConnectedDevice) {
+        if (getScanConfig().isAcceptSysConnectedDevice) {
             getSystemConnectedDevices()
         }
         //如果是高版本使用新的搜索方法
-        if (config.isUseBluetoothLeScanner && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (getScanConfig().isUseBluetoothLeScanner && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if (bleScanner == null) {
                 bleScanner = bluetoothAdapter.bluetoothLeScanner
             }
             if (scanCallback == null) {
                 scanCallback = MyScanCallback()
             }
-            if (config.scanSettings == null) {
+            if (getScanConfig().scanSettings == null) {
                 bleScanner!!.startScan(scanCallback)
             } else {
-                bleScanner!!.startScan(null, config.scanSettings, scanCallback)
+                bleScanner!!.startScan(null, getScanConfig().scanSettings, scanCallback)
             }
         } else {
             if (leScanCallback == null) {
@@ -160,7 +161,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
             }
             bluetoothAdapter.startLeScan(leScanCallback)
         }
-        mainThreadHandler.postDelayed(stopScanRunnable, config.scanPeriodMillis.toLong())
+        mainThreadHandler.postDelayed(stopScanRunnable, getScanConfig().scanPeriodMillis.toLong())
     }
     
     /**
@@ -207,39 +208,36 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
      * @param advData 广播内容
      */
     fun parseScanResult(device: BluetoothDevice, rssi: Int, advData: ByteArray?, detailResult: ScanResult?) {
-        if (config.isHideNonBleDevice && device.type != BluetoothDevice.DEVICE_TYPE_LE) {
+        if (getScanConfig().isHideNonBleDevice && device.type != BluetoothDevice.DEVICE_TYPE_LE) {
             return
         }
         resultCallback(device, rssi, advData)
         val deviceName = if (TextUtils.isEmpty(device.name)) "Unknown Device" else device.name
-        //生成
-        var dev: Device? = null
-        if (config.scanHandler != null) {
-            val scanHandler = config.scanHandler!!
-            //三个为空则不过滤
-            if ((scanHandler.names.isEmpty() && scanHandler.addrs.isEmpty() && scanHandler.uuids.isEmpty()) ||
-                    (scanHandler.names.contains(device.name) || scanHandler.addrs.contains(device.address) || acceptUuid(scanHandler.uuids, advData))){
-                //只在指定的过滤器通知
-                dev = scanHandler.handleAdvertisingData(device, advData!!)
-            }         
-        }
-        if (dev != null || config.scanHandler == null) {
-            if (dev == null) {
-                dev = Device()
-            }
-            dev.name = if (TextUtils.isEmpty(dev.name)) deviceName else dev.name
-            dev.addr = device.address
-            dev.rssi = rssi
-            dev.bondState = device.bondState
-            dev.originalDevice = device
-            dev.scanRecord = advData
-            if (detailResult != null) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    dev.isConnectable = detailResult.isConnectable
+        //三个为空则不过滤
+        if ((getScanConfig().names.isEmpty() && getScanConfig().addrs.isEmpty() && getScanConfig().uuids.isEmpty()) ||
+                (getScanConfig().names.contains(device.name) || getScanConfig().addrs.contains(device.address) || acceptUuid(getScanConfig().uuids, advData))){
+            //生成
+            val deviceCreater = Ble.instance.bleConfig.deviceCreater
+            var dev = deviceCreater?.valueOf(device, advData)
+            //只在指定的过滤器通知        
+            if (dev != null || deviceCreater == null) {
+                if (dev == null) {
+                    dev = Device()
                 }
+                dev.name = if (TextUtils.isEmpty(dev.name)) deviceName else dev.name
+                dev.addr = device.address
+                dev.rssi = rssi
+                dev.bondState = device.bondState
+                dev.originalDevice = device
+                dev.scanRecord = advData
+                if (detailResult != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        dev.isConnectable = detailResult.isConnectable
+                    }
+                }
+                handleScanCallback(false, dev, -1, "")
             }
-            handleScanCallback(false, dev, -1, "")
-        }
+        }        
         Ble.println(Ble::class.java, Log.DEBUG, "found device! [name: $deviceName, mac: ${device.address}]")
     }
 

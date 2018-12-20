@@ -133,9 +133,10 @@ class Ble private constructor() {
      */
     @Synchronized
     fun initialize(app: Application): Boolean {
-        if (isInited) {
+        if (isInitialized) {
             return true
         }
+        this.app = app
         //检查手机是否支持BLE
         if (!app.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             return false
@@ -151,7 +152,7 @@ class Ble private constructor() {
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
         app.registerReceiver(receiver, filter)
         isInited = true
-        scanner = Scanner(bluetoothAdapter!!, mainThreadHandler, bleConfig)
+        scanner = Scanner(bluetoothAdapter!!, mainThreadHandler)
         return true
     }
 
@@ -238,7 +239,7 @@ class Ble private constructor() {
      * 搜索蓝牙设备
      */
     fun startScan() {
-        if (!checkInitStateAndContext()) {
+        if (checkInitStateAndContext()) {
             scanner?.startScan(app!!) { device, _, _ ->
                 for (connection in connectionMap.values) {
                     connection.onScanResult(device.address)
@@ -251,10 +252,9 @@ class Ble private constructor() {
      * 停止搜索蓝牙设备
      */
     fun stopScan() {
-        if (!checkInitStateAndContext()) {
-            return
-        }
-        scanner?.stopScan()
+        if (checkInitStateAndContext()) {
+            scanner?.stopScan()
+        }        
     }
 
     /**

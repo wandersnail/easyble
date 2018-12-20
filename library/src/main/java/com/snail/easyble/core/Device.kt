@@ -33,7 +33,7 @@ class Device : Comparable<Device>, Cloneable, Parcelable {
     /** 连接状态 */
     var connectionState = IConnection.STATE_DISCONNECTED
     /** 配对状态 */
-    var bondState = 0
+    var bondState = BluetoothDevice.BOND_NONE
     /** 是否可连接，只在API 26及以上可获取 */
     var isConnectable: Boolean? = null
 
@@ -110,8 +110,8 @@ class Device : Comparable<Device>, Cloneable, Parcelable {
 
         fun valueOf(bluetoothDevice: BluetoothDevice): Device {
             val device = Device()
-            device.name = bluetoothDevice.name
-            device.addr = bluetoothDevice.address
+            device.name = bluetoothDevice.name ?: ""
+            device.addr = bluetoothDevice.address ?: ""
             device.bondState = bluetoothDevice.bondState
             device.originalDevice = bluetoothDevice
             return device

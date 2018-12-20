@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -18,17 +19,15 @@ import com.snail.commons.base.BaseHolder
 import com.snail.commons.base.BaseListAdapter
 import com.snail.commons.entity.PermissionsRequester
 import com.snail.commons.utils.PreferencesUtils
-import com.snail.commons.utils.ToastUtils
 import com.snail.easyble.callback.ScanListener
 import com.snail.easyble.core.Ble
-import com.snail.easyble.core.BleLogger
 import com.snail.easyble.core.Device
+import com.snail.easyble.core.ScanConfig
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlin.system.exitProcess
 
 class MainActivity : AppCompatActivity() {
     private var permissionsRequester: PermissionsRequester? = null
-    private var scanning = false
     private var listAdapter: ListAdapter? = null
     private val devList = ArrayList<Device>()
 
@@ -36,34 +35,29 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         initialize()
-        initViews()     
-        Ble.instance.setLogPrintLevel(BleLogger.ALL)//输出日志
+        initViews()             
         Ble.instance.addScanListener(scanListener)
-        Ble.instance.bleConfig.setAcceptSysConnectedDevice(false)
-        Ble.instance.bleConfig.setHideNonBleDevice(true)
-        Ble.instance.bleConfig.setUseBluetoothLeScanner(PreferencesUtils.getBoolean(Consts.SP_KEY_USE_NEW_SCANNER, true))
+        val scanConfig = ScanConfig().setAcceptSysConnectedDevice(false)
+                .setHideNonBleDevice(true)
+                .setUseBluetoothLeScanner(PreferencesUtils.getBoolean(Consts.SP_KEY_USE_NEW_SCANNER, true))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            Ble.instance.bleConfig.setScanSettings(ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build())
+            scanConfig.setScanSettings(ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build())
         }
+        Ble.instance.bleConfig.setScanConfig(scanConfig)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.main, menu)
-        menu?.findItem(R.id.menuOld)?.isVisible = Ble.instance.bleConfig.isUseBluetoothLeScanner
-        menu?.findItem(R.id.menuNew)?.isVisible = !Ble.instance.bleConfig.isUseBluetoothLeScanner
-        ToastUtils.showShort("当前使用的是: ${if (Ble.instance.bleConfig.isUseBluetoothLeScanner) "新" else "旧"}扫描器")
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
-            R.id.menuOld -> {//使用旧扫描器
-                Ble.instance.bleConfig.setUseBluetoothLeScanner(false)
-                PreferencesUtils.putBoolean(Consts.SP_KEY_USE_NEW_SCANNER, false)
-            }
-            R.id.menuNew -> {//使用新扫描器
-                Ble.instance.bleConfig.setUseBluetoothLeScanner(true)
-                PreferencesUtils.putBoolean(Consts.SP_KEY_USE_NEW_SCANNER, true)
+            R.id.menuStop -> {
+                if (Ble.instance.isInitialized) {
+                    refreshLayout.isRefreshing = false
+                    Ble.instance.stopScan()
+                }
             }
         }
         invalidateOptionsMenu()
@@ -108,11 +102,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        Ble.println(javaClass, Log.DEBUG, "onResume")
         if (Ble.instance.isInitialized) {
             if (Ble.instance.isBluetoothAdapterEnabled) {
-                if (!refreshLayout.isRefreshing) {
-                    refreshLayout.isRefreshing = true
-                }
                 doStartScan()
             } else {
                 startActivity(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
@@ -187,16 +179,18 @@ class MainActivity : AppCompatActivity() {
         listAdapter?.clear()
         layoutEmpty.visibility = View.VISIBLE
         Ble.instance.startScan()
+        Ble.println(javaClass, Log.DEBUG, "doStartScan")
     }
 
     private val scanListener = object : ScanListener {
         override fun onScanStart() {
-            scanning = true            
+            if (!refreshLayout.isRefreshing) {
+                refreshLayout.isRefreshing = true
+            }
         }
 
         override fun onScanStop() {
-            refreshLayout.isRefreshing = false
-            scanning = false            
+            refreshLayout.isRefreshing = false            
         }
 
         override fun onScanResult(device: Device) {
