@@ -13,7 +13,7 @@ open class BleConfig {
     var bondController: IBondController? = null
         private set    
     /** Device实例生成器 */
-    var deviceCreater: IDeviceCreater? = null
+    var deviceCreator: IDeviceCreator? = null
         private set
 
     /**
@@ -37,8 +37,8 @@ open class BleConfig {
     /**
      * 设置Device实例生成器，在搜索结果中返回的实例
      */
-    fun setDeviceCreater(creater: IDeviceCreater): BleConfig {
-        deviceCreater = creater
+    fun setDeviceCreator(creator: IDeviceCreator): BleConfig {
+        deviceCreator = creator
         return this
     }
 }

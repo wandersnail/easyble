@@ -7,12 +7,13 @@ import android.bluetooth.BluetoothDevice
  * 时间: 2018/12/20 09:27
  * 作者: zengfansheng
  */
-interface IDeviceCreater {
+interface IDeviceCreator {
     /**
-     * 根据广播信息添创建Device
+     * 根据广播信息创建Device，同时过滤
+     * 
      * @param device 搜索到的设备
      * @param advData 广播内容
-     * @return 如果不是想要的设备返回null，否则返回创建的Device
+     * @return 返回null时，此搜索结果将被抛弃，不会出现在搜索结果回调中，否则返回创建的Device
      */
     fun valueOf(device: BluetoothDevice, advData: ByteArray?): Device?
 }
