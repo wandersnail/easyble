@@ -11,7 +11,7 @@ import java.util.*
  */
 class ConnectionConfig : Cloneable {
     /** 连接成功后，延时发现服务的时间 */
-    var discoverServicesDelayMillis: Long = 500
+    var discoverServicesDelayMillis = 500
         internal set
     /** 连接超时时间 */
     var connectTimeoutMillis = 10000
@@ -23,7 +23,7 @@ class ConnectionConfig : Cloneable {
     var tryReconnectTimes = TRY_RECONNECT_TIMES_INFINITE
         private set
     /** 包发送延时 */
-    var packageWriteDelayMillis: Int = 0
+    var packageWriteDelayMillis = 0
         private set
     /** 写请求延时 */
     var requestWriteDelayMillis = -1
@@ -59,7 +59,7 @@ class ConnectionConfig : Cloneable {
      * @param delayMillis 延时，毫秒
      */
     fun setDiscoverServicesDelayMillis(delayMillis: Int): ConnectionConfig {
-        this.discoverServicesDelayMillis = delayMillis.toLong()
+        this.discoverServicesDelayMillis = delayMillis
         return this
     }
 

@@ -7,14 +7,14 @@ package com.snail.easyble.core
  */
 open class BleConfig {
     /** 扫描过滤器 */
-    var scanConfig: ScanConfig = ScanConfig()
-        private set
+    var scanConfig = ScanConfig()
+        protected set
     /** 连接进行配对的控制 */
     var bondController: IBondController? = null
-        private set    
+        protected set    
     /** Device实例生成器 */
     var deviceCreator: IDeviceCreator? = null
-        private set
+        protected set
 
     /**
      * 设置扫描过滤器
@@ -29,7 +29,7 @@ open class BleConfig {
     /**
      * 连接进行配对的控制
      */
-    fun setBondController(bondController: IBondController): BleConfig {
+    fun setBondController(bondController: IBondController?): BleConfig {
         this.bondController = bondController
         return this
     }
@@ -37,7 +37,7 @@ open class BleConfig {
     /**
      * 设置Device实例生成器，在搜索结果中返回的实例
      */
-    fun setDeviceCreator(creator: IDeviceCreator): BleConfig {
+    fun setDeviceCreator(creator: IDeviceCreator?): BleConfig {
         deviceCreator = creator
         return this
     }

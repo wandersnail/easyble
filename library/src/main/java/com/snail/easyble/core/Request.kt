@@ -12,8 +12,8 @@ import java.util.*
  */
 class Request private constructor(var type: RequestType, var requestId: String, var service: UUID?, var characteristic: UUID?, var descriptor: UUID?, var value: ByteArray?, 
                                   internal var callback: RequestCallback<*>?) {
-    internal var waitWriteResult: Boolean = false
-    internal var writeDelay: Int = 0
+    internal var waitWriteResult = false
+    internal var writeDelay = 0
     //-----分包发送时用到-----
     internal var remainQueue: Queue<ByteArray>? = null
     internal var sendingBytes: ByteArray? = null
