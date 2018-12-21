@@ -119,7 +119,7 @@ object Events {
                                              */
                                             var failType: Int,
                                             /** 请求时带的数据  */
-                                            var src: ByteArray)
+                                            var src: ByteArray?)
 
     /**
      * 日志事件
@@ -174,7 +174,7 @@ object Events {
         return RemoteRssiRead(device, requestId, rssi)
     }
 
-    fun newRequestFailed(device: Device, requestId: String, requestType: Request.RequestType, failType: Int, src: ByteArray): RequestFailed {
+    fun newRequestFailed(device: Device, requestId: String, requestType: Request.RequestType, failType: Int, src: ByteArray?): RequestFailed {
         return RequestFailed(device, requestId, requestType, failType, src)
     }
 
