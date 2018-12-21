@@ -269,7 +269,7 @@ class Ble private constructor() {
         if (device == null) {
             Connection.notifyConnectFailed(null, IConnection.CONNECT_FAIL_TYPE_UNSPECIFIED_MAC_ADDRESS, listener)
         } else {
-            connect(Device.valueOf(device), config, listener)
+            connect(Device(device), config, listener)
         }
     }
 

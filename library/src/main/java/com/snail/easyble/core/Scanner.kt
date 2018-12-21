@@ -222,14 +222,12 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
             //只在指定的过滤器通知        
             if (dev != null || deviceCreater == null) {
                 if (dev == null) {
-                    dev = Device()
+                    dev = Device(device)
                 }
                 dev.name = if (TextUtils.isEmpty(dev.name)) deviceName else dev.name
-                dev.addr = device.address
                 dev.rssi = rssi
                 dev.bondState = device.bondState
-                dev.originalDevice = device
-                dev.scanRecord = advData
+                dev.advData = advData
                 if (detailResult != null) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         dev.isConnectable = detailResult.isConnectable
