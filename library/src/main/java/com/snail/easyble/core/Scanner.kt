@@ -212,7 +212,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
             return
         }
         resultCallback(device, rssi, advData)
-        val deviceName = if (TextUtils.isEmpty(device.name)) "Unknown Device" else device.name
+        val deviceName = if (TextUtils.isEmpty(device.name)) "" else device.name
         //三个为空则不过滤
         if ((getScanConfig().names.isEmpty() && getScanConfig().addrs.isEmpty() && getScanConfig().uuids.isEmpty()) ||
                 (getScanConfig().names.contains(device.name) || getScanConfig().addrs.contains(device.address) || acceptUuid(getScanConfig().uuids, advData))){
