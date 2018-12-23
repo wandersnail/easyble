@@ -20,13 +20,13 @@ class ScanConfig {
     var isUseBluetoothLeScanner = true
         private set
     /** 是否显示系统已连接设备 */
-    var isAcceptSysConnectedDevice: Boolean = false
+    var isAcceptSysConnectedDevice = false
         private set
     /** 搜索设置，Android5.0以上有效 */
     var scanSettings: ScanSettings? = null
         private set
     /** 是否过滤非BLE设备 */
-    var isHideNonBleDevice: Boolean = false
+    var isHideNonBleDevice = false
         private set
 
     /**

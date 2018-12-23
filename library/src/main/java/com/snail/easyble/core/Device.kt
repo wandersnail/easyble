@@ -87,6 +87,10 @@ open class Device constructor(val originalDevice: BluetoothDevice) : Comparable<
     }
 
     constructor(source: Parcel) : this(source.readParcelable<BluetoothDevice>(BluetoothDevice::class.java.classLoader)!!) {
+        readFromParcel(source)
+    }
+    
+    protected fun readFromParcel(source: Parcel) {
         advData = source.createByteArray()
         name = source.readString()!!
         devId = source.readString()!!

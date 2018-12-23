@@ -318,7 +318,7 @@ abstract class BaseConnection internal constructor(device: Device, protected var
 
     private fun handleFaildCallback(request: Request, failType: Int, executeNext: Boolean) {
         if (request.callback != null) {
-            handleRequestCallback(request.callback!!, Events.newRequestFailed(device!!, request.requestId, request.type, failType, request.value!!))
+            handleRequestCallback(request.callback!!, Events.newRequestFailed(device!!, request.requestId, request.type, failType, request.value))
         } else {
             onRequestFialed(request.requestId, request.type, failType, request.value)
         }

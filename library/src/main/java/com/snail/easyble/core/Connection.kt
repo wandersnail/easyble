@@ -89,7 +89,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
                     device!!.connectionState = IConnection.STATE_CONNECTED
                     sendConnectionCallback()
                     // 进行服务发现，延时
-                    connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_DISCOVER_SERVICES, config.discoverServicesDelayMillis)
+                    connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_DISCOVER_SERVICES, config.discoverServicesDelayMillis.toLong())
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Ble.println(javaClass, Log.DEBUG, "disconnected! [name: ${device!!.name}, mac: ${device!!.addr}, autoReconnEnable: ${config.isAutoReconnect}]")
                     clearRequestQueueAndNotify()

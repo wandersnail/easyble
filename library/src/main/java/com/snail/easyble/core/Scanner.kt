@@ -217,7 +217,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         if ((getScanConfig().names.isEmpty() && getScanConfig().addrs.isEmpty() && getScanConfig().uuids.isEmpty()) ||
                 (getScanConfig().names.contains(device.name) || getScanConfig().addrs.contains(device.address) || acceptUuid(getScanConfig().uuids, advData))){
             //生成
-            val deviceCreater = Ble.instance.bleConfig.deviceCreater
+            val deviceCreater = Ble.instance.bleConfig.deviceCreator
             var dev = deviceCreater?.valueOf(device, advData)
             //只在指定的过滤器通知        
             if (dev != null || deviceCreater == null) {
