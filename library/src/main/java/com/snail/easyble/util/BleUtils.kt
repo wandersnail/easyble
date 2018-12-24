@@ -31,7 +31,7 @@ object BleUtils {
             stringBuilder.append(hv)
             stringBuilder.append(" ")
         }
-        return stringBuilder.toString().toUpperCase()
+        return stringBuilder.toString().toUpperCase(Locale.ENGLISH)
     }
 
     /**

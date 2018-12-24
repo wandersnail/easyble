@@ -43,7 +43,7 @@ class ScanConfig {
      */
     fun addAcceptAddrs(addrs: List<String>): ScanConfig {
         addrs.forEach { 
-            val addr = it.toUpperCase()
+            val addr = it.toUpperCase(Locale.ENGLISH)
             if (!this.addrs.contains(addr)) {
                 this.addrs.add(addr)
             }
