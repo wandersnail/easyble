@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BLE</string>
+    <string name="app_name">Easy BLE</string>
     <string name="setting">设置</string>
     <string name="cancel">取消</string>
     <string name="lack_permission_msg">当前应用缺少必要权限。\n\n请点击\"设置\"-\"权限\"-打开所需权限。</string>

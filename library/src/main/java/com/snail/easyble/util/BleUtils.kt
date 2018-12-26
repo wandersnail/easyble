@@ -4,19 +4,11 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.*
 
-
-
-
 /**
- * 描述: 工具类
- * 时间: 2018/4/24 15:27
- * 作者: zengfansheng
+ * date: 2018/4/24 15:27
+ * author: zengfansheng
  */
 object BleUtils {
-    /**
-     * byte数组转换成16进制字符串
-     * @param src 源
-     */
     fun bytesToHexString(src: ByteArray?): String {
         val stringBuilder = StringBuilder()
         if (src == null || src.isEmpty()) {
@@ -32,42 +24,6 @@ object BleUtils {
             stringBuilder.append(" ")
         }
         return stringBuilder.toString().toUpperCase(Locale.ENGLISH)
-    }
-
-    /**
-     * 反射调用方法，只适用一个参数的，无返回值
-     * @param method 方法名
-     * @param cls 参数字节码
-     * @param obj 方法所属实例
-     * @param args 参数实例
-     */
-    operator fun <T> invoke(method: String, cls: Class<T>, obj: Any, vararg args: Any) {
-        try {
-            val m = obj.javaClass.getDeclaredMethod(method, cls)
-            m.isAccessible = true
-            m.invoke(obj, *args)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-    }
-
-    /**
-     * 反射调用方法，只适用无参，返回值
-     * @param method 方法名
-     * @param obj 方法所属实例
-     */
-    @Suppress("UNCHECKED_CAST")
-    operator fun <T> invoke(method: String, obj: Any): T? {
-        try {
-            val m = obj.javaClass.getDeclaredMethod(method)
-            m.isAccessible = true
-            return m.invoke(obj) as T
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        return null
     }
 
     /**

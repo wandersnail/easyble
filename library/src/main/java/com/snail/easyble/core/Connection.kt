@@ -3,65 +3,68 @@ package com.snail.easyble.core
 import android.bluetooth.*
 import android.os.Build
 import android.os.Message
+import android.support.annotation.UiThread
 import android.util.Log
 import com.snail.easyble.callback.ConnectionStateChangeListener
 import com.snail.easyble.event.Events
 import com.snail.easyble.util.BleUtils
 
 /**
- * 描述: 蓝牙连接
- * 时间: 2018/4/11 15:29
- * 作者: zengfansheng
+ * Used for handling connection state and auto reconnect etc.
+ * 
+ * date: 2018/4/11 15:29
+ * author: zengfansheng
  */
 class Connection private constructor(device: Device, bluetoothDevice: BluetoothDevice, config: ConnectionConfig) : BaseConnection(device, bluetoothDevice, config) {
 
     private var stateChangeListener: ConnectionStateChangeListener? = null
-    private var connStartTime: Long = 0
-    private var refreshTimes: Int = 0 //记录刷新次数，如果成功发现服务器，则清零
-    private var tryReconnectTimes: Int = 0 //尝试重连次数
-    private var lastConnectState = -1
-    private var reconnectImmediatelyCount: Int = 0 //不搜索，直接连接次数
-    private var refreshing: Boolean = false
-    private var isActiveDisconnect: Boolean = false
+    private var connStartTime = 0L //Used for connection timeout
+    private var refreshTimes = 0 //Refresh times. clear if the server is successfully discovered
+    private var tryReconnectTimes = 0 //Try to reconnect times
+    private var lastConnectState = -1 
+    private var reconnectImmediatelyCount = 0 //reconnection count without scanning
+    private var refreshing = false
+    private var isActiveDisconnect = false
 
     internal val isAutoReconnectEnabled: Boolean
         get() = config.isAutoReconnect
 
     val connctionState: Int
-        get() = device!!.connectionState
+        get() = device.connectionState
 
     @Synchronized
     internal fun onScanResult(addr: String) {
-        if (!isReleased && device!!.addr == addr && device!!.connectionState == IConnection.STATE_SCANNING) {
+        if (!isReleased && device.addr == addr && device.connectionState == IConnection.STATE_SCANNING) {
             connHandler.sendEmptyMessage(BaseConnection.MSG_CONNECT)
         }
     }
 
+    @UiThread
     override fun handleMsg(msg: Message) {
         if (isReleased && msg.what != BaseConnection.MSG_RELEASE) {
             return
         }
         when (msg.what) {
-            BaseConnection.MSG_CONNECT //连接
+            BaseConnection.MSG_CONNECT //do connect
             -> if (bluetoothAdapter!!.isEnabled) {
                 doConnect()
             }
-            BaseConnection.MSG_DISCONNECT //处理断开
+            BaseConnection.MSG_DISCONNECT //handle disconnect
             -> doDisconnect(msg.arg1 == MSG_ARG_RECONNECT && bluetoothAdapter!!.isEnabled, true)
-            BaseConnection.MSG_REFRESH //手动刷新
+            BaseConnection.MSG_REFRESH //manual refresh
             -> doRefresh(false)
-            BaseConnection.MSG_AUTO_REFRESH //自动刷新
+            BaseConnection.MSG_AUTO_REFRESH //auto refresh
             -> doRefresh(true)
-            BaseConnection.MSG_RELEASE //销毁连接
+            BaseConnection.MSG_RELEASE //destroy the connection
             -> {
-                config.setAutoReconnect(false) //停止重连
+                config.setAutoReconnect(false) //stop auto reconnect
                 doDisconnect(false, msg.arg1 == MSG_ARG_NOTIFY)
             }
-            BaseConnection.MSG_TIMER //定时器
+            BaseConnection.MSG_TIMER
             -> doTimer()
-            BaseConnection.MSG_DISCOVER_SERVICES, //开始发现服务
-            BaseConnection.MSG_ON_CONNECTION_STATE_CHANGE, //连接状态变化
-            BaseConnection.MSG_ON_SERVICES_DISCOVERED //发现服务
+            BaseConnection.MSG_DISCOVER_SERVICES, //do discover remote services
+            BaseConnection.MSG_ON_CONNECTION_STATE_CHANGE, //GATT client has connected/disconnected to/from a remote GATT server.
+            BaseConnection.MSG_ON_SERVICES_DISCOVERED //remote services have been discovered
             -> if (bluetoothAdapter!!.isEnabled) {
                 if (msg.what == BaseConnection.MSG_DISCOVER_SERVICES) {
                     doDiscoverServices()
@@ -77,7 +80,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     }
 
     private fun notifyDisconnected() {
-        device!!.connectionState = IConnection.STATE_DISCONNECTED
+        device.connectionState = IConnection.STATE_DISCONNECTED
         sendConnectionCallback()
     }
 
@@ -85,18 +88,18 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         if (bluetoothGatt != null) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Ble.println(javaClass, Log.DEBUG, "connected! [name: ${device!!.name}, mac: ${device!!.addr}]")
-                    device!!.connectionState = IConnection.STATE_CONNECTED
+                    Ble.println(javaClass, Log.DEBUG, "connected! [name: ${device.name}, addr: ${device.addr}]")
+                    device.connectionState = IConnection.STATE_CONNECTED
                     sendConnectionCallback()
-                    // 进行服务发现，延时
+                    // Discovers services after a delay
                     connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_DISCOVER_SERVICES, config.discoverServicesDelayMillis.toLong())
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    Ble.println(javaClass, Log.DEBUG, "disconnected! [name: ${device!!.name}, mac: ${device!!.addr}, autoReconnEnable: ${config.isAutoReconnect}]")
+                    Ble.println(javaClass, Log.DEBUG, "disconnected! [name: ${device.name}, addr: ${device.addr}, autoReconnEnable: ${config.isAutoReconnect}]")
                     clearRequestQueueAndNotify()
                     notifyDisconnected()
                 }
             } else {
-                Ble.println(javaClass, Log.ERROR, "GATT error! [name: ${device!!.name}, mac: ${device!!.addr}, status: $status]")
+                Ble.println(javaClass, Log.ERROR, "GATT error! [name: ${device.name}, addr: ${device.addr}, status: $status]")
                 if (status == 133) {
                     doClearTaskAndRefresh()
                 } else {
@@ -111,19 +114,19 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         if (bluetoothGatt != null) {
             val services = bluetoothGatt!!.services
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                Ble.println(javaClass, Log.DEBUG, "services discovered! [name: ${device!!.name}, mac: ${device!!.addr}, size: ${bluetoothGatt!!.services.size}]")
+                Ble.println(javaClass, Log.DEBUG, "services discovered! [name: ${device.name}, addr: ${device.addr}, size: ${bluetoothGatt!!.services.size}]")
                 if (services.isEmpty()) {
                     doClearTaskAndRefresh()
                 } else {
                     refreshTimes = 0
                     tryReconnectTimes = 0
                     reconnectImmediatelyCount = 0
-                    device!!.connectionState = IConnection.STATE_SERVICE_DISCOVERED
+                    device.connectionState = IConnection.STATE_SERVICE_DISCOVERED
                     sendConnectionCallback()
                 }
             } else {
                 doClearTaskAndRefresh()
-                Ble.println(javaClass, Log.ERROR, "GATT error! [status: $status, name: ${device!!.name}, mac: ${device!!.addr}]")
+                Ble.println(javaClass, Log.ERROR, "GATT error! [status: $status, name: ${device.name}, addr: ${device.addr}]")
             }
         }
     }
@@ -131,7 +134,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     private fun doDiscoverServices() {
         if (bluetoothGatt != null) {
             bluetoothGatt!!.discoverServices()
-            device!!.connectionState = IConnection.STATE_SERVICE_DISCOVERING
+            device.connectionState = IConnection.STATE_SERVICE_DISCOVERING
             sendConnectionCallback()
         } else {
             notifyDisconnected()
@@ -140,26 +143,26 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
 
     private fun doTimer() {
         if (!isReleased) {
-            //只处理不在连接状态的、不在刷新、不是主动断开
-            if (device!!.connectionState != IConnection.STATE_SERVICE_DISCOVERED && !refreshing && !isActiveDisconnect) {
-                if (device!!.connectionState != IConnection.STATE_DISCONNECTED) {
+            //only process that are not connected, not refreshing and not actively disconnected
+            if (device.connectionState != IConnection.STATE_SERVICE_DISCOVERED && !refreshing && !isActiveDisconnect) {
+                if (device.connectionState != IConnection.STATE_DISCONNECTED) {
                     //超时
                     if (System.currentTimeMillis() - connStartTime > config.connectTimeoutMillis) {
                         connStartTime = System.currentTimeMillis()
-                        Ble.println(javaClass, Log.ERROR, "connect timeout! [name: ${device!!.name}, mac: ${device!!.addr}]")
+                        Ble.println(javaClass, Log.ERROR, "connect timeout! [name: ${device.name}, addr: ${device.addr}]")
                         val type = when {
-                            device!!.connectionState == IConnection.STATE_SCANNING -> IConnection.TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE
-                            device!!.connectionState == IConnection.STATE_CONNECTING -> IConnection.TIMEOUT_TYPE_CANNOT_CONNECT
+                            device.connectionState == IConnection.STATE_SCANNING -> IConnection.TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE
+                            device.connectionState == IConnection.STATE_CONNECTING -> IConnection.TIMEOUT_TYPE_CANNOT_CONNECT
                             else -> IConnection.TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES
                         }
-                        Ble.instance.postEvent(Events.newConnectTimeout(device!!, type))
-                        stateChangeListener?.onConnectTimeout(device!!, type)
+                        Ble.instance.postEvent(Events.newConnectTimeout(device, type))
+                        stateChangeListener?.onConnectTimeout(device, type)
                         if (config.isAutoReconnect && (config.tryReconnectTimes == ConnectionConfig.TRY_RECONNECT_TIMES_INFINITE || tryReconnectTimes < config.tryReconnectTimes)) {
                             doDisconnect(true, true)
                         } else {
                             doDisconnect(false, true)
                             notifyConnectFailed(device, IConnection.CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION, stateChangeListener)
-                            Ble.println(javaClass, Log.ERROR, "connect failed! [type: maximun reconnection, name: ${device!!.name}, mac: ${device!!.addr}]")
+                            Ble.println(javaClass, Log.ERROR, "connect failed! [type: maximun reconnection, name: ${device.name}, addr: ${device.addr}]")
                         }
                     }
                 } else if (config.isAutoReconnect) {
@@ -170,10 +173,10 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         }
     }
 
-    //处理刷新
+    //handle refresh
     private fun doRefresh(isAuto: Boolean) {
-        Ble.println(javaClass, Log.DEBUG, "refresh GATT! [name: ${device!!.name}, mac: ${device!!.addr}]")
-        connStartTime = System.currentTimeMillis() //防止刷新过程自动重连
+        Ble.println(javaClass, Log.DEBUG, "refresh GATT! [name: ${device.name}, addr: ${device.addr}]")
+        connStartTime = System.currentTimeMillis() //Prevent the refresh process from automatically reconnecting
         if (bluetoothGatt != null) {
             try {
                 bluetoothGatt!!.disconnect()
@@ -208,18 +211,21 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
 
     private fun doConnect() {
         cancelRefreshState()
-        device!!.connectionState = IConnection.STATE_CONNECTING
+        device.connectionState = IConnection.STATE_CONNECTING
         sendConnectionCallback()
-        Ble.println(javaClass, Log.DEBUG, "connecting [name: ${device!!.name}, mac: ${device!!.addr}]")
-        //连接时需要停止蓝牙扫描
+        Ble.println(javaClass, Log.DEBUG, "connecting [name: ${device.name}, addr: ${device.addr}]")
+        //Scanning must be stopped when connecting, otherwise unexpected problems will arise.
         Ble.instance.stopScan()
         connHandler.postDelayed({
             if (!isReleased) {
-                bluetoothGatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    bluetoothDevice.connectGatt(Ble.instance.context, false, this@Connection,
-                            if (config.transport == -1) BluetoothDevice.TRANSPORT_AUTO else config.transport)
-                } else {
-                    bluetoothDevice.connectGatt(Ble.instance.context, false, this@Connection)
+                bluetoothGatt = when {
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
+                        bluetoothDevice.connectGatt(Ble.instance.context, false, this@Connection, config.transport, config.phy)
+                    }
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
+                        bluetoothDevice.connectGatt(Ble.instance.context, false, this@Connection, config.transport)
+                    }
+                    else -> bluetoothDevice.connectGatt(Ble.instance.context, false, this@Connection)
                 }
             }
         }, 500)
@@ -231,11 +237,11 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
             closeGatt(bluetoothGatt)
             bluetoothGatt = null
         }
-        device!!.connectionState = IConnection.STATE_DISCONNECTED
-        if (isReleased) { //销毁
-            device!!.connectionState = IConnection.STATE_RELEASED
+        device.connectionState = IConnection.STATE_DISCONNECTED
+        if (isReleased) {
+            device.connectionState = IConnection.STATE_RELEASED
             super.release()
-            Ble.println(javaClass, Log.DEBUG, "connection released! [name: ${device!!.name}, mac: ${device!!.addr}]")
+            Ble.println(javaClass, Log.DEBUG, "connection released! [name: ${device.name}, addr: ${device.addr}]")
         } else if (reconnect) {
             tryReconnectTimes++
             if (reconnectImmediatelyCount < config.reconnectImmediatelyTimes) {
@@ -270,9 +276,9 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
             Ble.instance.stopScan()
             connHandler.postDelayed({
                 if (!isReleased) {
-                    //开启扫描，扫描到才连接
-                    device!!.connectionState = IConnection.STATE_SCANNING
-                    Ble.println(javaClass, Log.DEBUG, "scanning [name: ${device!!.name}, mac: ${device!!.addr}]")
+                    //Scan for devices before connecting
+                    device.connectionState = IConnection.STATE_SCANNING
+                    Ble.println(javaClass, Log.DEBUG, "scanning [name: ${device.name}, addr: ${device.addr}]")
                     Ble.instance.startScan()
                 }
             }, 2000)
@@ -285,10 +291,10 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     }
 
     private fun sendConnectionCallback() {
-        if (lastConnectState != device!!.connectionState) {
-            lastConnectState = device!!.connectionState
-            stateChangeListener?.onConnectionStateChanged(device!!)
-            Ble.instance.postEvent(Events.newConnectionStateChanged(device!!, device!!.connectionState))
+        if (lastConnectState != device.connectionState) {
+            lastConnectState = device.connectionState
+            stateChangeListener?.onConnectionStateChanged(device)
+            Ble.instance.postEvent(Events.newConnectionStateChanged(device, device.connectionState))
         }
     }
 
@@ -313,14 +319,14 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     }
 
     /**
-     * 清理缓存
+     * Clears the internal cache and forces a refresh of the services from the remote device.
      */
     fun refresh() {
         connHandler.sendEmptyMessage(BaseConnection.MSG_REFRESH)
     }
 
     /**
-     * 销毁连接，停止定时器
+     * Destroy the connection and stop timer.
      */
     override fun release() {
         super.release()
@@ -328,7 +334,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     }
 
     /**
-     * 销毁连接，不发布消息
+     * Destroy the connection and stop timer without notify.
      */
     fun releaseNoEvnet() {
         super.release()
@@ -352,51 +358,62 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     }
 
     override fun onCharacteristicRead(requestId: String, characteristic: BluetoothGattCharacteristic) {
-        Ble.instance.postEvent(Events.newCharacteristicRead(device!!, requestId, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, characteristic.value)))
-        Ble.println(javaClass, Log.DEBUG, "characteristic read! [mac: ${device!!.addr}, value: ${getHex(characteristic.value)}]")
+        Ble.instance.postEvent(Events.newCharacteristicRead(device, requestId, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, characteristic.value)))
+        Ble.println(javaClass, Log.DEBUG, "characteristic read! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
     }
 
     override fun onCharacteristicChanged(characteristic: BluetoothGattCharacteristic) {
-        Ble.instance.postEvent(Events.newCharacteristicChanged(device!!, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, characteristic.value)))
-        Ble.println(javaClass, Log.INFO, "characteristic change! [mac: ${device!!.addr}, value: ${getHex(characteristic.value)}]")
+        Ble.instance.postEvent(Events.newCharacteristicChanged(device, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, characteristic.value)))
+        Ble.println(javaClass, Log.INFO, "characteristic change! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
     }
 
     override fun onReadRemoteRssi(requestId: String, rssi: Int) {
-        Ble.instance.postEvent(Events.newRemoteRssiRead(device!!, requestId, rssi))
-        Ble.println(javaClass, Log.DEBUG, "rssi read! [mac: ${device!!.addr}, rssi: $rssi]")
+        Ble.instance.postEvent(Events.newRemoteRssiRead(device, requestId, rssi))
+        Ble.println(javaClass, Log.DEBUG, "rssi read! [addr: ${device.addr}, rssi: $rssi]")
     }
 
     override fun onMtuChanged(requestId: String, mtu: Int) {
-        Ble.instance.postEvent(Events.newMtuChanged(device!!, requestId, mtu))
-        Ble.println(javaClass, Log.DEBUG, "mtu change! [mac: ${device!!.addr}, mtu: $mtu]")
+        Ble.instance.postEvent(Events.newMtuChanged(device, requestId, mtu))
+        Ble.println(javaClass, Log.DEBUG, "mtu change! [addr: ${device.addr}, mtu: $mtu]")
     }
 
     override fun onRequestFialed(requestId: String, requestType: Request.RequestType, failType: Int, value: ByteArray?) {
-        Ble.instance.postEvent(Events.newRequestFailed(device!!, requestId, requestType, failType, value!!))
-        Ble.println(javaClass, Log.DEBUG, "request failed! [mac: ${device!!.addr}, requestId: $requestId, failType: $failType]")
+        Ble.instance.postEvent(Events.newRequestFailed(device, requestId, requestType, failType, value!!))
+        Ble.println(javaClass, Log.DEBUG, "request failed! [addr: ${device.addr}, requestId: $requestId, failType: $failType]")
     }
 
     override fun onDescriptorRead(requestId: String, descriptor: BluetoothGattDescriptor) {
         val charac = descriptor.characteristic
-        Ble.instance.postEvent(Events.newDescriptorRead(device!!, requestId, GattDescriptor(charac.service.uuid, charac.uuid, descriptor.uuid, descriptor.value)))
-        Ble.println(javaClass, Log.DEBUG, "descriptor read! [mac: ${device!!.addr}, value: ${getHex(descriptor.value)}]")
+        Ble.instance.postEvent(Events.newDescriptorRead(device, requestId, GattDescriptor(charac.service.uuid, charac.uuid, descriptor.uuid, descriptor.value)))
+        Ble.println(javaClass, Log.DEBUG, "descriptor read! [addr: ${device.addr}, value: ${getHex(descriptor.value)}]")
     }
 
     override fun onNotificationChanged(requestId: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean) {
         val charac = descriptor.characteristic
-        Ble.instance.postEvent(Events.newNotificationChanged(device!!, requestId, GattDescriptor(charac.service.uuid, charac.uuid, descriptor.uuid, descriptor.value), isEnabled))
-        Ble.println(javaClass, Log.DEBUG, "${if (isEnabled) "notification enabled!" else "notification disabled!"} [mac: ${device!!.addr}]")
+        Ble.instance.postEvent(Events.newNotificationChanged(device, requestId, GattDescriptor(charac.service.uuid, charac.uuid, descriptor.uuid, descriptor.value), isEnabled))
+        Ble.println(javaClass, Log.DEBUG, "${if (isEnabled) "notification enabled!" else "notification disabled!"} [addr: ${device.addr}]")
     }
 
     override fun onIndicationChanged(requestId: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean) {
         val characteristic = descriptor.characteristic
-        Ble.instance.postEvent(Events.newIndicationChanged(device!!, requestId, GattDescriptor(characteristic.service.uuid, characteristic.uuid, descriptor.uuid, descriptor.value), isEnabled))
-        Ble.println(javaClass, Log.DEBUG, "${if (isEnabled) "indication enabled!" else "indication disabled"} [mac: ${device!!.addr}]")
+        Ble.instance.postEvent(Events.newIndicationChanged(device, requestId, GattDescriptor(characteristic.service.uuid, characteristic.uuid, descriptor.uuid, descriptor.value), isEnabled))
+        Ble.println(javaClass, Log.DEBUG, "${if (isEnabled) "indication enabled!" else "indication disabled"} [addr: ${device.addr}]")
     }
 
     override fun onCharacteristicWrite(requestId: String, characteristic: GattCharacteristic) {
-        Ble.instance.postEvent(Events.newCharacteristicWrite(device!!, requestId, characteristic))
-        Ble.println(javaClass, Log.DEBUG, "write success! [mac: ${device!!.addr}, value: ${getHex(characteristic.value)}]")
+        Ble.instance.postEvent(Events.newCharacteristicWrite(device, requestId, characteristic))
+        Ble.println(javaClass, Log.DEBUG, "write success! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
+    }
+
+    override fun onPhyReadOrUpdate(requestId: String, read: Boolean, txPhy: Int, rxPhy: Int) {
+        val event = if (read) {
+            Ble.println(javaClass, Log.DEBUG, "phy read! [addr: ${device.addr}, tvPhy: $txPhy, rxPhy: $rxPhy]")
+            Events.newPhyRead(device, requestId, txPhy, rxPhy)
+        } else {
+            Ble.println(javaClass, Log.DEBUG, "phy update! [addr: ${device.addr}, tvPhy: $txPhy, rxPhy: $rxPhy]")
+            Events.newPhyUpdate(device, requestId, txPhy, rxPhy)
+        }
+        Ble.instance.postEvent(event)        
     }
 
     companion object {
@@ -405,34 +422,32 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         private const val MSG_ARG_NOTIFY = 2
 
         /**
-         * 连接
+         * Create a new connection.
          */
         @Synchronized
         internal fun newInstance(bluetoothAdapter: BluetoothAdapter, device: Device, config: ConnectionConfig?, connectDelay: Long, 
                                  stateChangeListener: ConnectionStateChangeListener?): Connection? {
             var connectionConfig = config
             if (!device.addr.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$".toRegex())) {
-                Ble.println(Connection::class.java, Log.ERROR, "connect failed! [type: unspecified mac address, name: ${device.name}, mac: ${device.addr}]")
-                notifyConnectFailed(device, IConnection.CONNECT_FAIL_TYPE_UNSPECIFIED_MAC_ADDRESS, stateChangeListener)
+                Ble.println(Connection::class.java, Log.ERROR, "connect failed! [type: unspecified mac address, name: ${device.name}, addr: ${device.addr}]")
+                notifyConnectFailed(device, IConnection.CONNECT_FAIL_TYPE_UNSPECIFIED_ADDRESS, stateChangeListener)
                 return null
             }
-            //初始化并建立连接
             if (connectionConfig == null) {
                 connectionConfig = ConnectionConfig()
             }
             val conn = Connection(device, bluetoothAdapter.getRemoteDevice(device.addr), connectionConfig)
             conn.bluetoothAdapter = bluetoothAdapter
             conn.stateChangeListener = stateChangeListener
-            //连接蓝牙设备
             conn.connStartTime = System.currentTimeMillis()
-            conn.connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_CONNECT, connectDelay) //连接
-            conn.connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_TIMER, connectDelay) //启动定时器，用于断线重连
+            conn.connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_CONNECT, connectDelay) //do connect
+            conn.connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_TIMER, connectDelay) //start timer
             return conn
         }
 
         internal fun notifyConnectFailed(device: Device?, type: Int, listener: ConnectionStateChangeListener?) {
-            listener?.onConnectFailed(device!!, type)
-            Ble.instance.postEvent(Events.newConnectFailed(device!!, type))
+            listener?.onConnectFailed(device, type)
+            Ble.instance.postEvent(Events.newConnectFailed(device, type))
         }
     }
 }

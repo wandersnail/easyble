@@ -1,25 +1,23 @@
 package com.snail.easyble.core
 
 /**
- * 描述:
- * 时间: 2018/8/5 18:28
- * 作者: zengfansheng
+ * 
+ * date: 2018/8/5 18:28
+ * author: zengfansheng
  */
 open class BleConfig {
-    /** 扫描过滤器 */
+    /** Configuration of Bluetooth LE scan */
     var scanConfig = ScanConfig()
         protected set
-    /** 连接进行配对的控制 */
+    /** if bond when connect to GATT Server hosted */
     var bondController: IBondController? = null
         protected set    
-    /** Device实例生成器 */
+    /** [Device] instance creator */
     var deviceCreator: IDeviceCreator? = null
         protected set
 
     /**
-     * 设置扫描过滤器
-     *
-     * @param config 扫描结果处理
+     * Configuration of Bluetooth LE scan
      */
     fun setScanConfig(config: ScanConfig): BleConfig {
         scanConfig = config
@@ -27,7 +25,7 @@ open class BleConfig {
     }
 
     /**
-     * 连接进行配对的控制
+     * Set if bond when connect to GATT Server hosted
      */
     fun setBondController(bondController: IBondController?): BleConfig {
         this.bondController = bondController
@@ -35,7 +33,7 @@ open class BleConfig {
     }
 
     /**
-     * 设置Device实例生成器，在搜索结果中返回的实例
+     * Set [Device] instance creator. It used in when a BLE advertisement has been found.
      */
     fun setDeviceCreator(creator: IDeviceCreator?): BleConfig {
         deviceCreator = creator

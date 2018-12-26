@@ -5,6 +5,8 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.support.annotation.IntRange
+import android.support.annotation.RequiresApi
 import com.snail.easyble.annotation.InvokeThread
 import com.snail.easyble.annotation.RunOn
 import com.snail.easyble.callback.CharacteristicChangedCallback
@@ -19,46 +21,40 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
- * 描述: 蓝牙连接基类
- * 时间: 2018/4/11 16:37
- * 作者: zengfansheng
+ * date: 2018/4/11 16:37
+ * author: zengfansheng
  */
 @Suppress("LeakingThis")
-abstract class BaseConnection internal constructor(device: Device, protected var bluetoothDevice: BluetoothDevice, config: ConnectionConfig) : BluetoothGattCallback(), IConnection {
+abstract class BaseConnection internal constructor(val device: Device, protected var bluetoothDevice: BluetoothDevice, val config: ConnectionConfig) : BluetoothGattCallback(), IConnection {
     var bluetoothGatt: BluetoothGatt? = null
         protected set
     private var requestQueue: MutableList<Request> = ArrayList()
-    protected var currentRequest: Request? = null
+    private var currentRequest: Request? = null
     private var pendingCharacteristic: BluetoothGattCharacteristic? = null
     protected var bluetoothAdapter: BluetoothAdapter? = null
     protected var isReleased: Boolean = false
     internal var connHandler: Handler
     private val mainHandler: Handler
-    /** 当前连接的配置 */
-    var config: ConnectionConfig
-        protected set
     private var characteristicChangedCallback: CharacteristicChangedCallback? = null
-    /** 当前连接的设备 */
-    var device: Device? = null
-        private set
     private val executorService: ExecutorService
 
     init {
-        this.device = device
-        this.config = config
         connHandler = ConnHandler(this)
         mainHandler = Handler(Looper.getMainLooper())
         executorService = Executors.newCachedThreadPool()
     }
 
     /**
-     * 获取蓝牙服务列表
+     * Returns a list of GATT services offered by the remote device.
      */
     val gattServices: List<BluetoothGattService>
         get() = if (bluetoothGatt != null) {
             bluetoothGatt!!.services
         } else ArrayList()
 
+    /**
+     * clear request queue without callbacks or EventBus's events
+     */
     fun clearRequestQueue() {
         synchronized(this) {
             requestQueue.clear()
@@ -67,12 +63,15 @@ abstract class BaseConnection internal constructor(device: Device, protected var
     }
 
     /**
-     * 设置设备上报数据回调
+     * set the callback handler that will receive remote characteristic notification
      */
     fun setCharacteristicChangedCallback(characteristicChangedCallback: CharacteristicChangedCallback) {
         this.characteristicChangedCallback = characteristicChangedCallback
     }
 
+    /**
+     * clear request queue by request type without callbacks or EventBus's events
+     */
     fun clearRequestQueueByType(type: Request.RequestType) {
         synchronized(this) {
             val it = requestQueue.iterator()
@@ -88,6 +87,9 @@ abstract class BaseConnection internal constructor(device: Device, protected var
         }
     }
 
+    /**
+     * clear request queue by request type and call callbacks or post EventBus's evnets
+     */
     internal fun clearRequestQueueAndNotify() {
         synchronized(this) {
             for (request in requestQueue) {
@@ -136,12 +138,11 @@ abstract class BaseConnection internal constructor(device: Device, protected var
     }
 
     override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
-        // 读取到值
         if (currentRequest != null) {
             if (currentRequest!!.type == Request.RequestType.READ_CHARACTERISTIC) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     if (currentRequest!!.callback != null) {
-                        handleRequestCallback(currentRequest!!.callback!!, Events.newCharacteristicRead(device!!, currentRequest!!.requestId,
+                        handleRequestCallback(currentRequest!!.callback!!, Events.newCharacteristicRead(device, currentRequest!!.requestId,
                                 GattCharacteristic(characteristic.service.uuid, characteristic.uuid, characteristic.value)))
                     } else {
                         onCharacteristicRead(currentRequest!!.requestId, characteristic)
@@ -160,7 +161,7 @@ abstract class BaseConnection internal constructor(device: Device, protected var
                 if (currentRequest!!.remainQueue == null || currentRequest!!.remainQueue!!.isEmpty()) {
                     val charac = GattCharacteristic(characteristic.service.uuid, characteristic.uuid, currentRequest!!.value!!)
                     if (currentRequest!!.callback != null) {
-                        handleRequestCallback(currentRequest!!.callback!!, Events.newCharacteristicWrite(device!!, currentRequest!!.requestId, charac))
+                        handleRequestCallback(currentRequest!!.callback!!, Events.newCharacteristicWrite(device, currentRequest!!.requestId, charac))
                     } else {
                         onCharacteristicWrite(currentRequest!!.requestId, charac)
                     }
@@ -186,7 +187,6 @@ abstract class BaseConnection internal constructor(device: Device, protected var
     }
 
     override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-        // 收到设备notify值 （设备上报值）
         onCharacteristicChanged(characteristic)
         if (characteristicChangedCallback != null) {
             try {
@@ -199,12 +199,12 @@ abstract class BaseConnection internal constructor(device: Device, protected var
         }
     }
 
-    override fun onReadRemoteRssi(gatt: BluetoothGatt, rssi: Int, status: Int) {
+    override fun onReadRemoteRssi(gatt: BluetoothGatt?, rssi: Int, status: Int) {
         if (currentRequest != null) {
             if (currentRequest!!.type == Request.RequestType.READ_RSSI) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     if (currentRequest!!.callback != null) {
-                        handleRequestCallback(currentRequest!!.callback!!, Events.newRemoteRssiRead(device!!, currentRequest!!.requestId, rssi))
+                        handleRequestCallback(currentRequest!!.callback!!, Events.newRemoteRssiRead(device, currentRequest!!.requestId, rssi))
                     } else {
                         onReadRemoteRssi(currentRequest!!.requestId, rssi)
                     }
@@ -219,65 +219,59 @@ abstract class BaseConnection internal constructor(device: Device, protected var
     override fun onDescriptorRead(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
         if (currentRequest != null) {
             val characteristic = descriptor.characteristic
-            if (currentRequest!!.type == Request.RequestType.TOGGLE_NOTIFICATION) {
-                if (status != BluetoothGatt.GATT_SUCCESS) {
-                    handleGattStatusFailed()
-                }
-                if (characteristic.service.uuid == pendingCharacteristic!!.service.uuid && characteristic.uuid == pendingCharacteristic!!.uuid) {
-                    if (enableNotificationOrIndicationFail(Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, currentRequest!!.value), true, characteristic)) {
+            when (currentRequest!!.type) {
+                Request.RequestType.ENABLE_NOTIFICATION,
+                Request.RequestType.DISABLE_NOTIFICATION,
+                Request.RequestType.ENABLE_INDICATION,
+                Request.RequestType.DISABLE_INDICATION -> {
+                    if (status != BluetoothGatt.GATT_SUCCESS) {
                         handleGattStatusFailed()
+                    } else if (characteristic.service.uuid == pendingCharacteristic!!.service.uuid && characteristic.uuid == pendingCharacteristic!!.uuid) {
+                        val isEnableNotify = currentRequest!!.type == Request.RequestType.ENABLE_NOTIFICATION
+                        if (enableNotificationOrIndicationFail(isEnableNotify || currentRequest!!.type == Request.RequestType.ENABLE_INDICATION,
+                                        isEnableNotify, characteristic)) {
+                            handleGattStatusFailed()
+                        }
                     }
                 }
-            } else if (currentRequest!!.type == Request.RequestType.TOGGLE_INDICATION) {
-                if (status != BluetoothGatt.GATT_SUCCESS) {
-                    handleGattStatusFailed()
-                }
-                if (characteristic.service.uuid == pendingCharacteristic!!.service.uuid && characteristic.uuid == pendingCharacteristic!!.uuid) {
-                    if (enableNotificationOrIndicationFail(Arrays.equals(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE, currentRequest!!.value), false, characteristic)) {
-                        handleGattStatusFailed()
-                    }
-                }
-            } else if (currentRequest!!.type == Request.RequestType.READ_DESCRIPTOR) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    if (currentRequest!!.callback != null) {
-                        handleRequestCallback(currentRequest!!.callback!!, Events.newDescriptorRead(device!!, currentRequest!!.requestId,
-                                GattDescriptor(characteristic.service.uuid, characteristic.uuid, descriptor.uuid, descriptor.value)))
+                Request.RequestType.READ_DESCRIPTOR -> {
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                        if (currentRequest!!.callback != null) {
+                            handleRequestCallback(currentRequest!!.callback!!, Events.newDescriptorRead(device, currentRequest!!.requestId,
+                                    GattDescriptor(characteristic.service.uuid, characteristic.uuid, descriptor.uuid, descriptor.value)))
+                        } else {
+                            onDescriptorRead(currentRequest!!.requestId, descriptor)
+                        }
                     } else {
-                        onDescriptorRead(currentRequest!!.requestId, descriptor)
+                        handleGattStatusFailed()
                     }
-                } else {
-                    handleGattStatusFailed()
+                    executeNextRequest()
                 }
-                executeNextRequest()
+                else -> {}
             }
         }
     }
 
-    override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
+    override fun onDescriptorWrite(gatt: BluetoothGatt?, descriptor: BluetoothGattDescriptor, status: Int) {
         if (currentRequest != null) {
-            if (currentRequest!!.type == Request.RequestType.TOGGLE_NOTIFICATION) {
+            if (currentRequest!!.type == Request.RequestType.ENABLE_NOTIFICATION || currentRequest!!.type == Request.RequestType.DISABLE_NOTIFICATION ||
+                    currentRequest!!.type == Request.RequestType.ENABLE_INDICATION || currentRequest!!.type == Request.RequestType.DISABLE_INDICATION) {
+                val localDescriptor = getDescriptor(descriptor.characteristic.service.uuid, descriptor.characteristic.uuid, IConnection.clientCharacteristicConfig)
                 if (status != BluetoothGatt.GATT_SUCCESS) {
                     handleGattStatusFailed()
+                    localDescriptor?.value = currentRequest!!.value
                 } else {
-                    val isEnabled = Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, currentRequest!!.value)
+                    val isEnabled = currentRequest!!.type == Request.RequestType.ENABLE_NOTIFICATION || currentRequest!!.type == Request.RequestType.ENABLE_INDICATION
                     if (currentRequest!!.callback != null) {
                         val ch = descriptor.characteristic
-                        handleRequestCallback(currentRequest!!.callback!!, Events.newNotificationChanged(device!!, currentRequest!!.requestId,
-                                GattDescriptor(ch.service.uuid, ch.uuid, descriptor.uuid, descriptor.value), isEnabled))
-                    } else {
+                        val event = if (currentRequest!!.type == Request.RequestType.ENABLE_NOTIFICATION || currentRequest!!.type == Request.RequestType.DISABLE_NOTIFICATION) {
+                            Events.newNotificationChanged(device, currentRequest!!.requestId, GattDescriptor(ch.service.uuid, ch.uuid, descriptor.uuid, descriptor.value), isEnabled)
+                        } else {
+                            Events.newIndicationChanged(device, currentRequest!!.requestId, GattDescriptor(ch.service.uuid, ch.uuid, descriptor.uuid, descriptor.value), isEnabled)
+                        }
+                        handleRequestCallback(currentRequest!!.callback!!, event)
+                    } else if (currentRequest!!.type == Request.RequestType.ENABLE_NOTIFICATION || currentRequest!!.type == Request.RequestType.DISABLE_NOTIFICATION) {
                         onNotificationChanged(currentRequest!!.requestId, descriptor, isEnabled)
-                    }
-                }
-                executeNextRequest()
-            } else if (currentRequest!!.type == Request.RequestType.TOGGLE_INDICATION) {
-                if (status != BluetoothGatt.GATT_SUCCESS) {
-                    handleGattStatusFailed()
-                } else {
-                    val isEnabled = Arrays.equals(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE, currentRequest!!.value)
-                    if (currentRequest!!.callback != null) {
-                        val ch = descriptor.characteristic
-                        handleRequestCallback(currentRequest!!.callback!!, Events.newIndicationChanged(device!!, currentRequest!!.requestId,
-                                GattDescriptor(ch.service.uuid, ch.uuid, descriptor.uuid, descriptor.value), isEnabled))
                     } else {
                         onIndicationChanged(currentRequest!!.requestId, descriptor, isEnabled)
                     }
@@ -287,12 +281,12 @@ abstract class BaseConnection internal constructor(device: Device, protected var
         }
     }
 
-    override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+    override fun onMtuChanged(gatt: BluetoothGatt?, mtu: Int, status: Int) {
         if (currentRequest != null) {
             if (currentRequest!!.type == Request.RequestType.CHANGE_MTU) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     if (currentRequest!!.callback != null) {
-                        handleRequestCallback(currentRequest!!.callback!!, Events.newMtuChanged(device!!, currentRequest!!.requestId, mtu))
+                        handleRequestCallback(currentRequest!!.callback!!, Events.newMtuChanged(device, currentRequest!!.requestId, mtu))
                     } else {
                         onMtuChanged(currentRequest!!.requestId, mtu)
                     }
@@ -304,7 +298,37 @@ abstract class BaseConnection internal constructor(device: Device, protected var
         }
     }
 
-    //需要保证currentRequest不为空
+    override fun onPhyRead(gatt: BluetoothGatt?, txPhy: Int, rxPhy: Int, status: Int) {
+        handlePhyReadOrUpdate(true, gatt, txPhy, rxPhy, status)
+    }
+
+    override fun onPhyUpdate(gatt: BluetoothGatt?, txPhy: Int, rxPhy: Int, status: Int) {
+        handlePhyReadOrUpdate(false, gatt, txPhy, rxPhy, status)
+    }
+
+    private fun handlePhyReadOrUpdate(read: Boolean, gatt: BluetoothGatt?, txPhy: Int, rxPhy: Int, status: Int) {
+        if (currentRequest != null) {
+            if ((read && currentRequest!!.type == Request.RequestType.READ_PHY) || ((!read && currentRequest!!.type == Request.RequestType.SET_PREFERRED_PHY))) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    if (currentRequest!!.callback != null) {
+                        val event = if (read) {
+                            Events.newPhyRead(device, currentRequest!!.requestId, txPhy, rxPhy)
+                        } else {
+                            Events.newPhyUpdate(device, currentRequest!!.requestId, txPhy, rxPhy)
+                        }
+                        handleRequestCallback(currentRequest!!.callback!!, event)
+                    } else {
+                        onPhyReadOrUpdate(currentRequest!!.requestId, read, txPhy, rxPhy)
+                    }
+                } else {
+                    handleGattStatusFailed()
+                }
+                executeNextRequest()
+            }
+        }
+    }
+
+    //make sure currentRequest is not null
     private fun handleGattStatusFailed() {
         handleFaildCallback(currentRequest!!, IConnection.REQUEST_FAIL_TYPE_GATT_STATUS_FAILED, false)
     }
@@ -318,7 +342,7 @@ abstract class BaseConnection internal constructor(device: Device, protected var
 
     private fun handleFaildCallback(request: Request, failType: Int, executeNext: Boolean) {
         if (request.callback != null) {
-            handleRequestCallback(request.callback!!, Events.newRequestFailed(device!!, request.requestId, request.type, failType, request.value))
+            handleRequestCallback(request.callback!!, Events.newRequestFailed(device, request.requestId, request.type, failType, request.value))
         } else {
             onRequestFialed(request.requestId, request.type, failType, request.value)
         }
@@ -342,7 +366,7 @@ abstract class BaseConnection internal constructor(device: Device, protected var
         execute(method, Runnable { method?.invoke(callback, param) })
     }
 
-    //根据方法上是否有相应的注解，决定回调线程
+    //Callback on different threads by annotation
     internal fun execute(method: Method?, runnable: Runnable) {
         if (method != null) {
             val invokeThread = method.getAnnotation(InvokeThread::class.java)
@@ -357,68 +381,173 @@ abstract class BaseConnection internal constructor(device: Device, protected var
     }
 
     /**
-     * 改变最大传输单元
-     * @param requestId 请求码
-     * @param mtu 最大传输单元
+     * change MTU(Maximum transmission unit)
+     *
+     * @param requestId Used to identify request tasks
+     * @param mtu Maximum transmission unit
      */
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     @JvmOverloads
-    fun changeMtu(requestId: String, mtu: Int, callback: RequestCallback<Events.MtuChanged>? = null) {
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP -> enqueue(Request.newChangeMtuRequest(requestId, mtu, callback))
-            callback != null -> callback.onFail(Events.newRequestFailed(device!!, requestId, Request.RequestType.CHANGE_MTU, IConnection.REQUEST_FAIL_TYPE_API_LEVEL_TOO_LOW, BleUtils.numberToBytes(false, mtu.toLong(), 2)))
-            else -> handleFaildCallback(requestId, Request.RequestType.CHANGE_MTU, IConnection.REQUEST_FAIL_TYPE_API_LEVEL_TOO_LOW, BleUtils.numberToBytes(false, mtu.toLong(), 2), false)
-        }
+    fun changeMtu(requestId: String, @IntRange(from = 23, to = 517) mtu: Int, callback: RequestCallback<Events.MtuChanged>? = null) {
+        enqueue(Request.newChangeMtuRequest(requestId, mtu, callback))
     }
 
-    /*
-     * 请求读取characteristic的值
-     * @param requestId 请求码
+    /**
+     * Reads the requested characteristic from the associated remote device.
      */
     @JvmOverloads
     fun readCharacteristic(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.CharacteristicRead>? = null) {
-        enqueue(Request.newReadCharacteristicRequest(requestId, service, characteristic, callback))
+        if (checkUuidExists(requestId, Request.RequestType.READ_CHARACTERISTIC, null, callback, service, characteristic)) {
+            enqueue(Request.newReadCharacteristicRequest(requestId, service, characteristic, callback))
+        }
+    }
+
+    @JvmOverloads
+    fun enableNotification(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.NotificationChanged>? = null) {
+        if (checkUuidExists(requestId, Request.RequestType.ENABLE_NOTIFICATION, null, callback, service, characteristic)) {
+            enqueue(Request.newEnableNotificationRequest(requestId, service, characteristic, callback))
+        }
+    }
+
+    @JvmOverloads
+    fun disableNotification(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.NotificationChanged>? = null) {
+        if (checkUuidExists(requestId, Request.RequestType.DISABLE_NOTIFICATION, null, callback, service, characteristic)) {
+            enqueue(Request.newDisableNotificationRequest(requestId, service, characteristic, callback))
+        }
+    }
+
+    @JvmOverloads
+    fun enableIndication(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.IndicationChanged>? = null) {
+        if (checkUuidExists(requestId, Request.RequestType.ENABLE_INDICATION, null, callback, service, characteristic)) {
+            enqueue(Request.newEnableIndicationRequest(requestId, service, characteristic, callback))
+        }
+    }
+
+    @JvmOverloads
+    fun disableIndication(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.IndicationChanged>? = null) {
+        if (checkUuidExists(requestId, Request.RequestType.DISABLE_INDICATION, null, callback, service, characteristic)) {
+            enqueue(Request.newDisableIndicationRequest(requestId, service, characteristic, callback))
+        }
     }
 
     /**
-     * 打开Notifications
-     *
-     * @param requestId 请求码
-     * @param enable    开启还是关闭
+     * Reads the value for a given descriptor from the associated remote device.
      */
-    @JvmOverloads
-    fun toggleNotification(requestId: String, service: UUID, characteristic: UUID, enable: Boolean, callback: RequestCallback<Events.NotificationChanged>? = null) {
-        enqueue(Request.newToggleNotificationRequest(requestId, service, characteristic, enable, callback))
-    }
-
-    /**
-     * @param enable 开启还是关闭
-     */
-    @JvmOverloads
-    fun toggleIndication(requestId: String, service: UUID, characteristic: UUID, enable: Boolean, callback: RequestCallback<Events.IndicationChanged>? = null) {
-        enqueue(Request.newToggleIndicationRequest(requestId, service, characteristic, enable, callback))
-    }
-
     @JvmOverloads
     fun readDescriptor(requestId: String, service: UUID, characteristic: UUID, descriptor: UUID, callback: RequestCallback<Events.DescriptorRead>? = null) {
-        enqueue(Request.newReadDescriptorRequest(requestId, service, characteristic, descriptor, callback))
+        if (checkUuidExists(requestId, Request.RequestType.READ_DESCRIPTOR, null, callback, service, characteristic)) {
+            enqueue(Request.newReadDescriptorRequest(requestId, service, characteristic, descriptor, callback))
+        }
     }
 
+    /**
+     * Writes a given characteristic and its values to the associated remote device.
+     */
     @JvmOverloads
     fun writeCharacteristic(requestId: String, service: UUID, characteristic: UUID, value: ByteArray?, callback: RequestCallback<Events.CharacteristicWrite>? = null) {
         if (value == null || value.isEmpty()) {
             if (callback != null) {
-                callback.onFail(Events.newRequestFailed(device!!, requestId, Request.RequestType.WRITE_CHARACTERISTIC, IConnection.REQUEST_FAIL_TYPE_VALUE_IS_NULL_OR_EMPTY, value!!))
+                callback.onFail(Events.newRequestFailed(device, requestId, Request.RequestType.WRITE_CHARACTERISTIC, IConnection.REQUEST_FAIL_TYPE_VALUE_IS_NULL_OR_EMPTY, value!!))
             } else {
                 handleFaildCallback(requestId, Request.RequestType.WRITE_CHARACTERISTIC, IConnection.REQUEST_FAIL_TYPE_VALUE_IS_NULL_OR_EMPTY, value, false)
             }
             return
+        } else if (checkUuidExists(requestId, Request.RequestType.WRITE_CHARACTERISTIC, value, callback, service, characteristic)) {
+            enqueue(Request.newWriteCharacteristicRequest(requestId, service, characteristic, value, callback))
         }
-        enqueue(Request.newWriteCharacteristicRequest(requestId, service, characteristic, value, callback))
     }
 
+    /**
+     * Read the RSSI for a connected remote device.
+     */
     @JvmOverloads
-    fun readRssi(requestId: String, callback: RequestCallback<Events.RemoteRssiRead>? = null) {
+    fun readRssi(requestId: String, callback: RequestCallback<Events.RemoteRssiRead>? = null) {        
         enqueue(Request.newReadRssiRequest(requestId, callback))
+    }
+
+    /**
+     * Read the current transmitter PHY and receiver PHY of the connection. The values are returned
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    @JvmOverloads
+    fun readPhy(requestId: String, callback: RequestCallback<Events.RemoteRssiRead>? = null) {
+        enqueue(Request.newReadPhyRequest(requestId, callback))
+    }
+
+    /**
+     * Set the preferred connection PHY for this app. Please note that this is just a
+     * recommendation, whether the PHY change will happen depends on other applications preferences,
+     * local and remote controller capabilities. Controller can override these settings.
+     *
+     * @param txPhy preferred transmitter PHY. Bitwise OR of any of [BluetoothDevice.PHY_LE_1M_MASK], [BluetoothDevice.PHY_LE_2M_MASK], and [BluetoothDevice.PHY_LE_CODED_MASK].
+     * @param rxPhy preferred receiver PHY. Bitwise OR of any of [BluetoothDevice.PHY_LE_1M_MASK], [BluetoothDevice.PHY_LE_2M_MASK], and [BluetoothDevice.PHY_LE_CODED_MASK].
+     * @param phyOptions preferred coding to use when transmitting on the LE Coded PHY. Can be one
+     * of [BluetoothDevice.PHY_OPTION_NO_PREFERRED], [BluetoothDevice.PHY_OPTION_S2] or
+     * [BluetoothDevice.PHY_OPTION_S8]
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    @JvmOverloads
+    fun setPreferredPhy(requestId: String, txPhy: Int, rxPhy: Int, phyOptions: Int, callback: RequestCallback<Events.RemoteRssiRead>? = null) {
+        enqueue(Request.newSetPreferredPhyRequest(requestId, txPhy, rxPhy, phyOptions, callback))
+    }
+
+    //check whether the Service or Characteristic or Descriptore exists
+    private fun checkUuidExists(requestId: String, requestType: Request.RequestType, src: ByteArray?, callback: RequestCallback<*>?, vararg uuids: UUID): Boolean {
+        return when {
+            uuids.isNotEmpty() -> {
+                checkServiceExists(uuids[0], requestId, requestType, src, callback)
+            }
+            uuids.size > 1 -> {
+                checkCharacteristicExists(uuids[0], uuids[1], requestId, requestType, src, callback)
+            }
+            uuids.size > 2 -> {
+                checkDescriptoreExists(uuids[0], uuids[1], uuids[2], requestId, requestType, src, callback)
+            }
+            else -> false
+        }
+    }
+
+    //check whether the Service exists
+    private fun checkServiceExists(uuid: UUID, requestId: String, requestType: Request.RequestType, src: ByteArray?, callback: RequestCallback<*>?): Boolean {
+        return if (getService(uuid) == null) {
+            if (callback == null) {
+                handleFaildCallback(requestId, requestType, IConnection.REQUEST_FAIL_TYPE_NULL_SERVICE, src, false)
+            } else {
+                handleRequestCallback(callback, Events.newRequestFailed(device, requestId, requestType, IConnection.REQUEST_FAIL_TYPE_NULL_SERVICE, src))
+            }
+            false
+        } else true
+    }
+
+    //check whether the Characteristic exists
+    private fun checkCharacteristicExists(service: UUID, characteristic: UUID, requestId: String, requestType: Request.RequestType,
+                                          src: ByteArray?, callback: RequestCallback<*>?): Boolean {
+        return if (checkServiceExists(service, requestId, requestType, src, callback)) {
+            if (getCharacteristic(service, characteristic) == null) {
+                if (callback == null) {
+                    handleFaildCallback(requestId, requestType, IConnection.REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC, src, false)
+                } else {
+                    handleRequestCallback(callback, Events.newRequestFailed(device, requestId, requestType, IConnection.REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC, src))
+                }
+                false
+            } else true
+        } else false
+    }
+
+    //check whether the Descriptore exists
+    private fun checkDescriptoreExists(service: UUID, characteristic: UUID, descriptor: UUID, requestId: String, requestType: Request.RequestType,
+                                       src: ByteArray?, callback: RequestCallback<*>?): Boolean {
+        return if (checkServiceExists(service, requestId, requestType, src, callback) && checkCharacteristicExists(service, characteristic,
+                        requestId, requestType, src, callback)) {
+            if (getDescriptor(service, characteristic, descriptor) == null) {
+                if (callback == null) {
+                    handleFaildCallback(requestId, requestType, IConnection.REQUEST_FAIL_TYPE_NULL_DESCRIPTOR, src, false)
+                } else {
+                    handleRequestCallback(callback, Events.newRequestFailed(device, requestId, requestType, IConnection.REQUEST_FAIL_TYPE_NULL_DESCRIPTOR, src))
+                }
+                false
+            } else true
+        } else false
     }
 
     private fun enqueue(request: Request) {
@@ -476,13 +605,20 @@ abstract class BaseConnection internal constructor(device: Device, protected var
                 when (request.type) {
                     Request.RequestType.READ_RSSI -> executeReadRssi(request)
                     Request.RequestType.CHANGE_MTU -> executeChangeMtu(request)
+                    Request.RequestType.READ_PHY -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        bluetoothGatt!!.readPhy()
+                    }
+                    Request.RequestType.SET_PREFERRED_PHY -> executeSetPreferredPhy(request)
                     else -> {
                         val gattService = bluetoothGatt!!.getService(request.service)
                         if (gattService != null) {
                             val characteristic = gattService.getCharacteristic(request.characteristic)
                             if (characteristic != null) {
                                 when (request.type) {
-                                    Request.RequestType.TOGGLE_NOTIFICATION, Request.RequestType.TOGGLE_INDICATION -> executeIndicationOrNotification(characteristic, request)
+                                    Request.RequestType.ENABLE_NOTIFICATION,
+                                    Request.RequestType.DISABLE_NOTIFICATION,
+                                    Request.RequestType.ENABLE_INDICATION,
+                                    Request.RequestType.DISABLE_INDICATION -> executeIndicationOrNotification(characteristic, request)
                                     Request.RequestType.READ_CHARACTERISTIC -> executeReadCharacteristic(characteristic, request)
                                     Request.RequestType.READ_DESCRIPTOR -> executeReadDescriptor(characteristic, request)
                                     Request.RequestType.WRITE_CHARACTERISTIC -> executeWriteCharacteristic(characteristic, request)
@@ -509,14 +645,21 @@ abstract class BaseConnection internal constructor(device: Device, protected var
             if (!bluetoothGatt!!.requestMtu(BleUtils.bytesToLong(false, *request.value!!).toInt())) {
                 handleFaildCallback(request, IConnection.REQUEST_FAIL_TYPE_REQUEST_FAILED, true)
             }
-        } else {
-            handleFaildCallback(request, IConnection.REQUEST_FAIL_TYPE_API_LEVEL_TOO_LOW, true)
         }
     }
 
     private fun executeReadRssi(request: Request) {
         if (!bluetoothGatt!!.readRemoteRssi()) {
             handleFaildCallback(request, IConnection.REQUEST_FAIL_TYPE_REQUEST_FAILED, true)
+        }
+    }
+
+    private fun executeSetPreferredPhy(request: Request) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val txPhy = BleUtils.bytesToLong(false, *Arrays.copyOfRange(request.value, 0, 4)).toInt()
+            val rxPhy = BleUtils.bytesToLong(false, *Arrays.copyOfRange(request.value, 4, 8)).toInt()
+            val phyOptions = BleUtils.bytesToLong(false, *Arrays.copyOfRange(request.value, 8, 12)).toInt()
+            bluetoothGatt!!.setPreferredPhy(txPhy, rxPhy, phyOptions)
         }
     }
 
@@ -532,25 +675,25 @@ abstract class BaseConnection internal constructor(device: Device, protected var
             request.writeDelay = config.packageWriteDelayMillis
             val packSize = config.packageSize
             val requestWriteDelayMillis = config.requestWriteDelayMillis
-            java.lang.Thread.sleep((if (requestWriteDelayMillis > 0) requestWriteDelayMillis else request.writeDelay).toLong())
+            Thread.sleep((if (requestWriteDelayMillis > 0) requestWriteDelayMillis else request.writeDelay).toLong())
             if (request.value!!.size > packSize) {
                 val list = BleUtils.splitPackage(request.value!!, packSize)
-                if (!request.waitWriteResult) { //不等待则遍历发送
+                if (!request.waitWriteResult) { //without waiting
                     for (i in list.indices) {
                         val bytes = list[i]
                         if (i > 0) {
-                            java.lang.Thread.sleep(request.writeDelay.toLong())
+                            Thread.sleep(request.writeDelay.toLong())
                         }
-                        if (writeFail(characteristic, bytes)) { //写失败
+                        if (writeFail(characteristic, bytes)) {
                             handleWriteFailed(request)
                             return
                         }
                     }
-                } else { //等待则只直接发送第一包，剩下的添加到队列等待回调
+                } else { //send the first package data and add the rest to the queue
                     request.remainQueue = ConcurrentLinkedQueue()
                     request.remainQueue!!.addAll(list)
                     request.sendingBytes = request.remainQueue!!.remove()
-                    if (writeFail(characteristic, request.sendingBytes!!)) { //写失败
+                    if (writeFail(characteristic, request.sendingBytes!!)) {
                         handleWriteFailed(request)
                         return
                     }
@@ -564,7 +707,7 @@ abstract class BaseConnection internal constructor(device: Device, protected var
             }
             if (!request.waitWriteResult) {
                 if (request.callback != null) {
-                    handleRequestCallback(request.callback!!, Events.newCharacteristicWrite(device!!, request.requestId, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, request.value!!)))
+                    handleRequestCallback(request.callback!!, Events.newCharacteristicWrite(device, request.requestId, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, request.value!!)))
                 } else {
                     onCharacteristicWrite(request.requestId, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, request.value!!))
                 }
@@ -612,22 +755,49 @@ abstract class BaseConnection internal constructor(device: Device, protected var
     }
 
     private fun enableNotificationOrIndicationFail(enable: Boolean, notification: Boolean, characteristic: BluetoothGattCharacteristic): Boolean {
-        //setCharacteristicNotification是设置本机
         if (!bluetoothAdapter!!.isEnabled || bluetoothGatt == null || !bluetoothGatt!!.setCharacteristicNotification(characteristic, enable)) {
             return true
         }
-        val descriptor = characteristic.getDescriptor(IConnection.clientCharacteristicConfig) ?: return true
+        val descriptor = characteristic.getDescriptor(IConnection.clientCharacteristicConfig)
+                ?: return true
+        val oriaValue = descriptor.value
+        if (currentRequest != null) {
+            if (currentRequest!!.type == Request.RequestType.DISABLE_NOTIFICATION || currentRequest!!.type == Request.RequestType.ENABLE_NOTIFICATION ||
+                    currentRequest!!.type == Request.RequestType.DISABLE_INDICATION || currentRequest!!.type == Request.RequestType.ENABLE_INDICATION) {
+                currentRequest!!.value = oriaValue
+            }
+        }
         if (enable) {
             descriptor.value = if (notification) BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE else BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
         } else {
             descriptor.value = BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
         }
-        //部分蓝牙在Android6.0及以下需要设置写入类型为有响应的，否则会enable回调是成功，但是仍然无法收到notification数据
+        // There was a bug in Android up to 6.0 where the descriptor was written using parent
+        // characteristic's write type, instead of always Write With Response, as the spec says.
         val writeType = characteristic.writeType
         characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-        val result = bluetoothGatt!!.writeDescriptor(descriptor) //把设置写入蓝牙设备
+        val result = bluetoothGatt!!.writeDescriptor(descriptor)
+        if (!enable) {
+            //restore the original value
+            descriptor.value = oriaValue
+        }
         characteristic.writeType = writeType
         return !result
+    }
+
+    fun isNotificationOrIndicationEnabled(characteristic: BluetoothGattCharacteristic): Boolean {
+        val descriptor = characteristic.getDescriptor(IConnection.clientCharacteristicConfig)
+                ?: return false
+        return Arrays.equals(descriptor.value, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) or
+                Arrays.equals(descriptor.value, BluetoothGattDescriptor.ENABLE_INDICATION_VALUE)
+    }
+
+    fun isNotificationOrIndicationEnabled(service: UUID, characteristic: UUID): Boolean {
+        val c = getCharacteristic(service, characteristic)
+        if (c != null) {
+            return isNotificationOrIndicationEnabled(c)
+        }
+        return false
     }
 
     companion object {
@@ -642,9 +812,8 @@ abstract class BaseConnection internal constructor(device: Device, protected var
         internal const val MSG_ON_CONNECTION_STATE_CHANGE = 8
         internal const val MSG_ON_SERVICES_DISCOVERED = 9
 
-        /*
-         * Clears the internal cache and forces a refresh of the services from the
-         * remote device.
+        /**
+         * Clears the internal cache and forces a refresh of the services from the remote device.
          */
         fun refresh(bluetoothGatt: BluetoothGatt): Boolean {
             try {

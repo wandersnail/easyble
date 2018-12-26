@@ -10,9 +10,9 @@ import com.snail.easyble.core.BleLogger;
 
 
 /**
- * 描述:
- * 时间: 2018/5/4 18:03
- * 作者: zengfansheng
+ * 
+ * date: 2018/5/4 18:03
+ * author: zengfansheng
  */
 public class MyApp extends Application {
 

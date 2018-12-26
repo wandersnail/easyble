@@ -1,9 +1,8 @@
 package com.snail.easyble.annotation
 
 /**
- * 描述:
- * 时间: 2018/12/11 21:27
- * 作者: zengfansheng
+ * date: 2018/12/11 21:27
+ * author: zengfansheng
  */
 enum class RunOn {
     POSTING, MAIN, BACKGROUND

@@ -1,6 +1,7 @@
 package cn.zfs.bledemo
 
 import android.bluetooth.BluetoothGattCharacteristic
+import android.os.Build
 import android.os.Bundle
 import android.os.Looper
 import android.support.v7.app.AppCompatActivity
@@ -22,9 +23,9 @@ import org.greenrobot.eventbus.ThreadMode
 import java.util.*
 
 /**
- * 描述:
- * 时间: 2018/6/16 14:01
- * 作者: zengfansheng
+ * 
+ * date: 2018/6/16 14:01
+ * author: zengfansheng
  */
 class ConnectionActivity : AppCompatActivity() {
     private var device: Device? = null
@@ -82,7 +83,7 @@ class ConnectionActivity : AppCompatActivity() {
                         Ble.println(javaClass, Log.ERROR, "数据：${BleUtils.bytesToHexString(characteristic.value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
                 })
-                connection?.toggleNotification("", UUID_SERVICE, UUID_NOTIFICATION_CHAR, true, object : RequestCallback<Events.NotificationChanged> {
+                connection?.enableNotification("", UUID_SERVICE, UUID_NOTIFICATION_CHAR, object : RequestCallback<Events.NotificationChanged> {
                     @InvokeThread(RunOn.MAIN)
                     override fun onSuccess(data: Events.NotificationChanged) {
                         Ble.println(javaClass, Log.ERROR, "RequestCallback toggleNotification onSuccess, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
@@ -123,18 +124,20 @@ class ConnectionActivity : AppCompatActivity() {
                         Ble.println(javaClass, Log.DEBUG, "RequestCallback readCharacteristic onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                     }
                 })
-                
-                connection?.changeMtu("", 256, object : RequestCallback<Events.MtuChanged> {
-                    @InvokeThread(RunOn.MAIN)
-                    override fun onSuccess(data: Events.MtuChanged) {
-                        Ble.println(javaClass, Log.ERROR, "RequestCallback changeMtu onSuccess, mtu: ${data.mtu}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
-                    }
 
-                    @InvokeThread(RunOn.MAIN)
-                    override fun onFail(requestFailed: Events.RequestFailed) {
-                        Ble.println(javaClass, Log.ERROR, "RequestCallback changeMtu onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
-                    }
-                })
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    connection?.changeMtu("", 256, object : RequestCallback<Events.MtuChanged> {
+                        @InvokeThread(RunOn.MAIN)
+                        override fun onSuccess(data: Events.MtuChanged) {
+                            Ble.println(javaClass, Log.ERROR, "RequestCallback changeMtu onSuccess, mtu: ${data.mtu}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                        }
+    
+                        @InvokeThread(RunOn.MAIN)
+                        override fun onFail(requestFailed: Events.RequestFailed) {
+                            Ble.println(javaClass, Log.ERROR, "RequestCallback changeMtu onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                        }
+                    })
+                }
             }
             IConnection.STATE_RELEASED -> {
                 tvState.text = "连接已释放"

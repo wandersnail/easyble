@@ -1,9 +1,9 @@
 package cn.zfs.bledemo;
 
 /**
- * 描述:
- * 时间: 2018/6/7 13:04
- * 作者: zengfansheng
+ * 
+ * date: 2018/6/7 13:04
+ * author: zengfansheng
  */
 public interface Consts {
     String EXTRA_DEVICE = "device";

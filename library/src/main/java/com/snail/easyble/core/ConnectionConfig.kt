@@ -2,51 +2,58 @@ package com.snail.easyble.core
 
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGattCharacteristic
+import android.os.Build
+import android.support.annotation.RequiresApi
 import java.util.*
 
 /**
- * 描述:
- * 时间: 2018/8/5 19:28
- * 作者: zengfansheng
+ * 
+ * date: 2018/8/5 19:28
+ * author: zengfansheng
  */
 class ConnectionConfig : Cloneable {
-    /** 连接成功后，延时发现服务的时间 */
+    /** The milliseconds of delay to discover remote services */
     var discoverServicesDelayMillis = 500
         internal set
-    /** 连接超时时间 */
+    /** The milliseconds of connection timeout */
     var connectTimeoutMillis = 10000
         private set
-    /** 请求超时时间 */
+    /** The milliseconds of request timeout */
     var requestTimeoutMillis = 3000
         private set
-    /** 断开后尝试自动重连次数 */
+    /** Maximum number of attempts to reconnect */
     var tryReconnectTimes = TRY_RECONNECT_TIMES_INFINITE
         private set
-    /** 包发送延时 */
+    /** Interval of write characteristic between every package */
     var packageWriteDelayMillis = 0
         private set
-    /** 写请求延时 */
+    /** Interval of write characteristic between every write request */
     var requestWriteDelayMillis = -1
         private set
-    /** 发送数据时的分包大小 */
+    /** The bytes of a package when write to characteristic one time */
     var packageSize = 20 
         private set
-    /** 是否等待写入结果 */
+    /** Whether to wait the callback onCharacteristicWrite */
     var isWaitWriteResult = true
         private set
-    /** 不搜索，直接通过mac连接的最大连接次数 */
+    /** Maximum number of reconnection times without scanning */
     var reconnectImmediatelyTimes = 3
         private set
     private val writeTypeMap = HashMap<String, Int>()
-    /** 是否断线自动重连 */
+    /** Whether to automatically connect the remote device when disconnected */
     var isAutoReconnect = true
         private set
-    /** 连接时的传输模式，只在6.0以上系统有效 */
-    var transport = -1
+    /** preferred transport for GATT connections to remote dual-mode devices [BluetoothDevice.TRANSPORT_AUTO] or
+     * [BluetoothDevice.TRANSPORT_BREDR] or [BluetoothDevice.TRANSPORT_LE] */
+    @RequiresApi(Build.VERSION_CODES.M)
+    var transport = BluetoothDevice.TRANSPORT_LE
+        private set
+    @RequiresApi(Build.VERSION_CODES.O)
+    var phy = BluetoothDevice.PHY_LE_1M_MASK
         private set
 
     /**
-     * 设置连接超时时间
+     * Set the milliseconds of connection timeout
      */
     fun setConnectTimeoutMillis(connectTimeoutMillis: Int): ConnectionConfig {
         this.connectTimeoutMillis = connectTimeoutMillis
@@ -54,9 +61,7 @@ class ConnectionConfig : Cloneable {
     }
 
     /**
-     * 设置连接成功后，延时发现服务的时间
-     *
-     * @param delayMillis 延时，毫秒
+     * Set the milliseconds of delay to discover remote services
      */
     fun setDiscoverServicesDelayMillis(delayMillis: Int): ConnectionConfig {
         this.discoverServicesDelayMillis = delayMillis
@@ -64,7 +69,7 @@ class ConnectionConfig : Cloneable {
     }
 
     /**
-     * 设置断开后尝试自动重连次数。-1为无限重连。默认为-1
+     * Set the maximum number of attempts to reconnect. The default is [TRY_RECONNECT_TIMES_INFINITE]
      */
     fun setTryReconnectTimes(tryReconnectTimes: Int): ConnectionConfig {
         this.tryReconnectTimes = tryReconnectTimes
@@ -72,7 +77,7 @@ class ConnectionConfig : Cloneable {
     }
 
     /**
-     * 设置包发送延时，默认不延时
+     * Set interval of write characteristic between every package. Default no delay.
      */
     fun setPackageWriteDelayMillis(packageWriteDelayMillis: Int): ConnectionConfig {
         this.packageWriteDelayMillis = packageWriteDelayMillis
@@ -80,7 +85,7 @@ class ConnectionConfig : Cloneable {
     }
 
     /**
-     * 设置写请求延时，如写请求需要分包，每包发送时的延时是包延时，而非此延时。默认不延时
+     * Set the interval of write characteristic between every write request. Default no delay.
      */
     fun setRequestWriteDelayMillis(requestWriteDelayMillis: Int): ConnectionConfig {
         this.requestWriteDelayMillis = requestWriteDelayMillis
@@ -88,9 +93,7 @@ class ConnectionConfig : Cloneable {
     }
 
     /**
-     * 发送数据时的分包大小
-     *
-     * @param packageSize 包大小，字节
+     * Set the bytes of a package when write to characteristic one time
      */
     fun setPackageSize(packageSize: Int): ConnectionConfig {
         if (packageSize > 0) {
@@ -99,18 +102,18 @@ class ConnectionConfig : Cloneable {
         return this
     }
 
+    /**
+     * Get the characteristic's write type
+     */
     fun getWriteType(service: UUID, characteristic: UUID): Int? {
         return writeTypeMap[String.format(Locale.US, "%s:%s", service.toString(), characteristic.toString())]
     }
 
     /**
-     * 设置写入模式，默认的规则：如果Characteristic的属性有PROPERTY_WRITE_NO_RESPONSE则使用
-     * [BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE]，否则使用[BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT]
+     * Set characteristic's write type
      *
-     * @param writeType 写入模式。
-     * - [BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE]
-     * - [BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT]
-     * - [BluetoothGattCharacteristic.WRITE_TYPE_SIGNED]
+     * @param writeType One of [BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE],
+     * [BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT], [BluetoothGattCharacteristic.WRITE_TYPE_SIGNED]
      */
     fun setWriteType(service: UUID, characteristic: UUID, writeType: Int): ConnectionConfig {
         writeTypeMap[String.format(Locale.US, "%s:%s", service.toString(), characteristic.toString())] = writeType
@@ -118,8 +121,7 @@ class ConnectionConfig : Cloneable {
     }
 
     /**
-     * 是否等待写入结果。不等待则直接处理下一个请求，否则等待onCharacteristicWrite回调后再处理下一请求，默认等待。
-     * 不等待的话onCharacteristicWrite回调不会处理，而是在writeCharacteristic发布onCharacteristicWrite信息
+     * Set whether to wait the callback onCharacteristicWrite
      */
     fun setWaitWriteResult(isWaitWriteResult: Boolean): ConnectionConfig {
         this.isWaitWriteResult = isWaitWriteResult
@@ -127,8 +129,7 @@ class ConnectionConfig : Cloneable {
     }
 
     /**
-     * 连接失败或连接断开时，不搜索，直接通过mac尝试重连
-     * @param reconnectImmediatelyTimes 最大尝试次数。超过此次数后进行搜索重连
+     * Set the maximum number of reconnection times without scanning
      */
     fun setReconnectImmediatelyTimes(reconnectImmediatelyTimes: Int): ConnectionConfig {
         this.reconnectImmediatelyTimes = reconnectImmediatelyTimes
@@ -136,7 +137,7 @@ class ConnectionConfig : Cloneable {
     }
 
     /**
-     * 是否断线自动重连
+     * Set whether to automatically connect the remote device when disconnected
      */
     fun setAutoReconnect(isAutoReconnect: Boolean): ConnectionConfig {
         this.isAutoReconnect = isAutoReconnect
@@ -144,10 +145,8 @@ class ConnectionConfig : Cloneable {
     }
 
     /**
-     * @param transport 连接时的传输模式，只在6.0以上系统有效。
-     * - [BluetoothDevice.TRANSPORT_AUTO]
-     * - [BluetoothDevice.TRANSPORT_BREDR]
-     * - [BluetoothDevice.TRANSPORT_LE]
+     * @param transport preferred transport for GATT connections to remote dual-mode devices [BluetoothDevice.TRANSPORT_AUTO] or 
+     * [BluetoothDevice.TRANSPORT_BREDR] or [BluetoothDevice.TRANSPORT_LE]
      */
     fun setTransport(transport: Int): ConnectionConfig {
         this.transport = transport
@@ -155,7 +154,7 @@ class ConnectionConfig : Cloneable {
     }
 
     /**
-     * 设置请求超时时间
+     * Set the milliseconds of request timeout
      */
     fun setRequestTimeoutMillis(requestTimeoutMillis: Int): ConnectionConfig {
         if (requestTimeoutMillis > 1000) {
@@ -164,7 +163,17 @@ class ConnectionConfig : Cloneable {
         return this
     }
 
+    /**
+     * @param phy preferred PHY for connections to remote LE device. Bitwise OR of any of [BluetoothDevice.PHY_LE_1M_MASK], 
+     * [BluetoothDevice.PHY_LE_2M_MASK], and [BluetoothDevice.PHY_LE_CODED_MASK]. 
+     */
+    fun setPhy(phy: Int): ConnectionConfig {
+        this.transport = transport
+        return this
+    }
+
     companion object {
-        const val TRY_RECONNECT_TIMES_INFINITE = -1 //无限重连
+        /** reconnect forever */
+        const val TRY_RECONNECT_TIMES_INFINITE = -1
     }
 }

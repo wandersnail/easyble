@@ -1,130 +1,114 @@
 package com.snail.easyble.event
 
 import android.bluetooth.BluetoothAdapter
+import android.support.annotation.IntRange
 import com.snail.easyble.core.*
 
 /**
- * 描述: 事件统一管理
- * 时间: 2018/5/29 09:25
- * 作者: zengfansheng
+ * date: 2018/5/29 09:25
+ * author: zengfansheng
  */
 object Events {
-    /**
-     * 蓝牙状态变化
-     */
+    
     class BluetoothStateChanged internal constructor(
             /**
-             * 当前状态。可能的值：
-             * - [BluetoothAdapter.STATE_OFF]
-             * - [BluetoothAdapter.STATE_TURNING_ON]
-             * - [BluetoothAdapter.STATE_ON]
-             * - [BluetoothAdapter.STATE_TURNING_OFF]
+             * One of [BluetoothAdapter.STATE_OFF], [BluetoothAdapter.STATE_TURNING_ON], [BluetoothAdapter.STATE_ON], [BluetoothAdapter.STATE_TURNING_OFF]
              */
             var state: Int)
 
     /**
-     * onCharacteristicChanged，收到设备notify值 （设备上报值）
+     * onCharacteristicChanged
      */
-    class CharacteristicChanged internal constructor(device: Device, var characteristic: GattCharacteristic) : DeviceEvent<Device>(device)
+    class CharacteristicChanged internal constructor(device: Device, val characteristic: GattCharacteristic) : DeviceEvent<Device>(device)
 
     /**
-     * onCharacteristicRead，读取到特征字的值
+     * onCharacteristicRead
      */
-    class CharacteristicRead internal constructor(device: Device, requestId: String, var characteristic: GattCharacteristic) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class CharacteristicRead internal constructor(device: Device, requestId: String, val characteristic: GattCharacteristic) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
 
     /**
-     * onCharacteristicWrite，写入成功
+     * onCharacteristicWrite
      */
-    class CharacteristicWrite internal constructor(device: Device, requestId: String, var characteristic: GattCharacteristic) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class CharacteristicWrite internal constructor(device: Device, requestId: String, val characteristic: GattCharacteristic) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
 
-    /**
-     * 连接失败
-     */
-    class ConnectFailed internal constructor(device: Device,
+    class ConnectFailed internal constructor(val device: Device?,
                                             /**
-                                             * 错误类型
-                                             * - [IConnection.CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION]
-                                             * - [IConnection.CONNECT_FAIL_TYPE_UNSPECIFIED_MAC_ADDRESS]
+                                             * Fail type. One of [IConnection.CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION], [IConnection.CONNECT_FAIL_TYPE_UNSPECIFIED_ADDRESS]
                                              */
-                                            var type: Int) : DeviceEvent<Device>(device)
+                                            val type: Int)
 
-    /**
-     * 连接状态变化
-     */
     class ConnectionStateChanged internal constructor(device: Device,
-                                                     /**
-                                                      * 当前连接状态。可能的值：
-                                                      * - [IConnection.STATE_DISCONNECTED]
-                                                      * - [IConnection.STATE_CONNECTING]
-                                                      * - [IConnection.STATE_SCANNING]
-                                                      * - [IConnection.STATE_CONNECTED]
-                                                      * - [IConnection.STATE_SERVICE_DISCOVERING]
-                                                      * - [IConnection.STATE_SERVICE_DISCOVERED]
-                                                      * - [IConnection.STATE_RELEASED]
-                                                      */
-                                                     var state: Int) : DeviceEvent<Device>(device)
+                                                      /** One of [IConnection.STATE_DISCONNECTED], [IConnection.STATE_CONNECTING],
+                                                       * [IConnection.STATE_SCANNING], [IConnection.STATE_CONNECTED], [IConnection.STATE_SERVICE_DISCOVERING],
+                                                       * [IConnection.STATE_SERVICE_DISCOVERED]
+                                                       */
+                                                     val state: Int) : DeviceEvent<Device>(device)
 
-    /**
-     * 连接超时
-     */
     class ConnectTimeout internal constructor(device: Device,
                                              /**
-                                              * 设备连接超时。可能的值：
-                                              * - [IConnection.TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE]
-                                              * - [IConnection.TIMEOUT_TYPE_CANNOT_CONNECT]
-                                              * - [IConnection.TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES]
+                                              * One of [IConnection.TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE], [IConnection.TIMEOUT_TYPE_CANNOT_CONNECT],
+                                              * [IConnection.TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES]
                                               */
-                                             var type: Int) : DeviceEvent<Device>(device)
+                                             val type: Int) : DeviceEvent<Device>(device)
 
     /**
-     * 读到indicator值
+     * onDescriptorRead
      */
-    class DescriptorRead internal constructor(device: Device, requestId: String, var descriptor: GattDescriptor) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class DescriptorRead internal constructor(device: Device, requestId: String, val descriptor: GattDescriptor) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
 
     /**
-     * indication开关状态变化
+     * indication
      */
-    class IndicationChanged internal constructor(device: Device, requestId: String, var descriptor: GattDescriptor, var isEnabled: Boolean) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class IndicationChanged internal constructor(device: Device, requestId: String, val descriptor: GattDescriptor, val isEnabled: Boolean) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
 
     /**
-     * onMtuChanged，MTU修改成功
+     * onMtuChanged，MTU change success
      */
     class MtuChanged internal constructor(device: Device, requestId: String,
-                                         /** 新的MTU值  */
-                                         var mtu: Int) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+                                         /** the new value of MTU  */
+                                         @IntRange(from = 23, to = 517)
+                                         val mtu: Int) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
 
     /**
-     * notification开关状态变化
+     * notification
      */
-    class NotificationChanged internal constructor(device: Device, requestId: String, var descriptor: GattDescriptor, var isEnabled: Boolean) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class NotificationChanged internal constructor(device: Device, requestId: String, val descriptor: GattDescriptor, val isEnabled: Boolean) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
 
     /**
-     * onReadRemoteRssi，读取到信息强度
+     * onReadRemoteRssi
      */
-    class RemoteRssiRead internal constructor(device: Device, requestId: String, var rssi: Int) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class RemoteRssiRead internal constructor(device: Device, requestId: String, val rssi: Int) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
 
     /**
-     * 请求失败事件，如读特征值、写特征值、开启notification等等
+     * onPhyRead
      */
-    class RequestFailed internal constructor(var device: Device, var requestId: String, var requestType: Request.RequestType,
+    class PhyRead internal constructor(device: Device, requestId: String, val txPhy: Int, val rxPhy: Int) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+
+    /**
+     * onPhyUpdate
+     */
+    class PhyUpdate internal constructor(device: Device, requestId: String, val txPhy: Int, val rxPhy: Int) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    
+    /**
+     * Request failure events, such as read characteristic, write characteristic, enable notifications, etc.
+     */
+    class RequestFailed internal constructor(val device: Device, val requestId: String, val requestType: Request.RequestType,
                                             /**
-                                             * - [IConnection.REQUEST_FAIL_TYPE_REQUEST_FAILED]
-                                             * - [IConnection.REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC]
-                                             * - [IConnection.REQUEST_FAIL_TYPE_NULL_DESCRIPTOR]
-                                             * - [IConnection.REQUEST_FAIL_TYPE_NULL_SERVICE]
-                                             * - [IConnection.REQUEST_FAIL_TYPE_GATT_STATUS_FAILED]
-                                             * - [IConnection.REQUEST_FAIL_TYPE_GATT_IS_NULL]
-                                             * - [IConnection.REQUEST_FAIL_TYPE_API_LEVEL_TOO_LOW]
-                                             * - [IConnection.REQUEST_FAIL_TYPE_BLUETOOTH_ADAPTER_DISABLED]
+                                             * One of [IConnection.REQUEST_FAIL_TYPE_REQUEST_FAILED],
+                                             * [IConnection.REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC],
+                                             * [IConnection.REQUEST_FAIL_TYPE_NULL_DESCRIPTOR],
+                                             * [IConnection.REQUEST_FAIL_TYPE_NULL_SERVICE],
+                                             * [IConnection.REQUEST_FAIL_TYPE_GATT_STATUS_FAILED],
+                                             * [IConnection.REQUEST_FAIL_TYPE_GATT_IS_NULL],
+                                             * [IConnection.REQUEST_FAIL_TYPE_API_LEVEL_TOO_LOW],
+                                             * [IConnection.REQUEST_FAIL_TYPE_BLUETOOTH_ADAPTER_DISABLED] etc.
                                              */
-                                            var failType: Int,
-                                            /** 请求时带的数据  */
-                                            var src: ByteArray?)
+                                            val failType: Int, val src: ByteArray?)
 
     /**
-     * 日志事件
+     * log event
      */
-    class LogChanged internal constructor(var log: String, var level: Int)
+    class LogChanged internal constructor(val log: String, val level: Int)
 
     fun newBluetoothStateChanged(state: Int): BluetoothStateChanged {
         return BluetoothStateChanged(state)
@@ -142,7 +126,7 @@ object Events {
         return CharacteristicWrite(device, requestId, characteristic)
     }
 
-    fun newConnectFailed(device: Device, code: Int): ConnectFailed {
+    fun newConnectFailed(device: Device?, code: Int): ConnectFailed {
         return ConnectFailed(device, code)
     }
 
@@ -162,7 +146,7 @@ object Events {
         return IndicationChanged(device, requestId, descriptor, isEnabled)
     }
 
-    fun newMtuChanged(device: Device, requestId: String, mtu: Int): MtuChanged {
+    fun newMtuChanged(device: Device, requestId: String, @IntRange(from = 23, to = 517) mtu: Int): MtuChanged {
         return MtuChanged(device, requestId, mtu)
     }
 
@@ -180,5 +164,13 @@ object Events {
 
     fun newLogChanged(log: String, level: Int): LogChanged {
         return LogChanged(log, level)
+    }
+
+    fun newPhyRead(device: Device, requestId: String, txPhy: Int, rxPhy: Int): PhyRead {
+        return PhyRead(device, requestId, txPhy, rxPhy)
+    }
+
+    fun newPhyUpdate(device: Device, requestId: String, txPhy: Int, rxPhy: Int): PhyUpdate {
+        return PhyUpdate(device, requestId, txPhy, rxPhy)
     }
 }

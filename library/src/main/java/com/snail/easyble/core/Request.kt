@@ -1,38 +1,31 @@
 package com.snail.easyble.core
 
-import android.bluetooth.BluetoothGattDescriptor
+import android.support.annotation.IntRange
 import com.snail.easyble.callback.RequestCallback
 import com.snail.easyble.util.BleUtils
 import java.util.*
 
 /**
- * 描述: 用作请求队列
- * 时间: 2018/4/11 15:15
- * 作者: zengfansheng
+ * date: 2018/4/11 15:15
+ * author: zengfansheng
  */
 class Request private constructor(var type: RequestType, var requestId: String, var service: UUID?, var characteristic: UUID?, var descriptor: UUID?, var value: ByteArray?, 
                                   internal var callback: RequestCallback<*>?) {
     internal var waitWriteResult = false
     internal var writeDelay = 0
-    //-----分包发送时用到-----
+    //-----used when packeting transmission-----
     internal var remainQueue: Queue<ByteArray>? = null
     internal var sendingBytes: ByteArray? = null
 
     enum class RequestType {
-        TOGGLE_NOTIFICATION, TOGGLE_INDICATION, READ_CHARACTERISTIC, READ_DESCRIPTOR, READ_RSSI, WRITE_CHARACTERISTIC, CHANGE_MTU
+        ENABLE_NOTIFICATION, ENABLE_INDICATION, DISABLE_NOTIFICATION, DISABLE_INDICATION, READ_CHARACTERISTIC, READ_DESCRIPTOR, READ_RSSI, WRITE_CHARACTERISTIC, CHANGE_MTU, READ_PHY, SET_PREFERRED_PHY
     }
 
     companion object {
 
         @JvmOverloads
-        internal fun newChangeMtuRequest(requestId: String, mtu: Int, callback: RequestCallback<*>? = null): Request {
-            var targetMtu = mtu
-            if (targetMtu < 23) {
-                targetMtu = 23
-            } else if (targetMtu > 517) {
-                targetMtu = 517
-            }
-            return Request(RequestType.CHANGE_MTU, requestId, null, null, null, BleUtils.numberToBytes(false, targetMtu.toLong(), 4), callback)
+        internal fun newChangeMtuRequest(requestId: String, @IntRange(from = 23, to = 517) mtu: Int, callback: RequestCallback<*>? = null): Request {
+            return Request(RequestType.CHANGE_MTU, requestId, null, null, null, BleUtils.numberToBytes(false, mtu.toLong(), 4), callback)
         }
 
         @JvmOverloads
@@ -41,15 +34,23 @@ class Request private constructor(var type: RequestType, var requestId: String, 
         }
 
         @JvmOverloads
-        internal fun newToggleNotificationRequest(requestId: String, service: UUID, characteristic: UUID, enable: Boolean, callback: RequestCallback<*>? = null): Request {
-            return Request(RequestType.TOGGLE_NOTIFICATION, requestId, service, characteristic, null,
-                    if (enable) BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE else BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE, callback)
+        internal fun newEnableNotificationRequest(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<*>? = null): Request {
+            return Request(RequestType.ENABLE_NOTIFICATION, requestId, service, characteristic, null, null, callback)
         }
 
         @JvmOverloads
-        internal fun newToggleIndicationRequest(requestId: String, service: UUID, characteristic: UUID, enable: Boolean, callback: RequestCallback<*>? = null): Request {
-            return Request(RequestType.TOGGLE_INDICATION, requestId, service, characteristic, null,
-                    if (enable) BluetoothGattDescriptor.ENABLE_INDICATION_VALUE else BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE, callback)
+        internal fun newDisableNotificationRequest(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<*>? = null): Request {
+            return Request(RequestType.DISABLE_NOTIFICATION, requestId, service, characteristic, null, null, callback)
+        }
+
+        @JvmOverloads
+        internal fun newEnableIndicationRequest(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<*>? = null): Request {
+            return Request(RequestType.ENABLE_INDICATION, requestId, service, characteristic, null, null, callback)
+        }
+
+        @JvmOverloads
+        internal fun newDisableIndicationRequest(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<*>? = null): Request {
+            return Request(RequestType.DISABLE_INDICATION, requestId, service, characteristic, null, null, callback)
         }
 
         @JvmOverloads
@@ -65,6 +66,22 @@ class Request private constructor(var type: RequestType, var requestId: String, 
         @JvmOverloads
         internal fun newReadRssiRequest(requestId: String, callback: RequestCallback<*>? = null): Request {
             return Request(RequestType.READ_RSSI, requestId, null, null, null, null, callback)
+        }
+
+        @JvmOverloads
+        internal fun newReadPhyRequest(requestId: String, callback: RequestCallback<*>? = null): Request {
+            return Request(RequestType.READ_PHY, requestId, null, null, null, null, callback)
+        }
+
+        @JvmOverloads
+        internal fun newSetPreferredPhyRequest(requestId: String, txPhy: Int, rxPhy: Int, phyOptions: Int, callback: RequestCallback<*>? = null): Request {
+            val tx = BleUtils.numberToBytes(false, txPhy.toLong(), 4)
+            val rx = BleUtils.numberToBytes(false, rxPhy.toLong(), 4)
+            val options = BleUtils.numberToBytes(false, phyOptions.toLong(), 4)
+            val value = Arrays.copyOf(tx, 12)
+            System.arraycopy(rx, 0, value, 4, 4)
+            System.arraycopy(options, 0, value, 8, 4)
+            return Request(RequestType.SET_PREFERRED_PHY, requestId, null, null, null, value, callback)
         }
     }
 }

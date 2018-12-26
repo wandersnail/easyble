@@ -24,12 +24,12 @@ import java.util.*
 
 
 /**
- * 描述: 搜索设备
- * 时间: 2018/12/19 20:11
- * 作者: zengfansheng
+ * This class provides methods to perform scan related operations for Bluetooth LE devices
+ * 
+ * date: 2018/12/19 20:11
+ * author: zengfansheng
  */
 internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private val mainThreadHandler: Handler) {
-    //是否正在扫描
     private var isScanning = false
     private var bleScanner: BluetoothLeScanner? = null
     private var scanCallback: ScanCallback? = null
@@ -37,7 +37,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     private val scanListeners = ArrayList<ScanListener>()
     private var resultCallback: (BluetoothDevice, Int, ByteArray?) -> Unit = { _, _, _ -> }
     
-    //判断位置服务是否打开
+    //Is the phone's location service turned on? Necessary!
     private fun isLocationEnabled(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
@@ -56,10 +56,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     private fun getScanConfig(): ScanConfig {
         return Ble.instance.bleConfig.scanConfig
     }
-        
-    /**
-     * 添加扫描监听器
-     */
+
     @Synchronized
     fun addScanListener(listener: ScanListener?) {
         if (listener != null && !scanListeners.contains(listener)) {
@@ -67,15 +64,12 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         }
     }
 
-    /**
-     * 移除扫描监听器
-     */
     @Synchronized
     fun removeScanListener(listener: ScanListener) {
         scanListeners.remove(listener)
     }
 
-    //是否缺少定位权限
+    //Check location permission
     private fun noLocationPermission(context: Context): Boolean {
         return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
@@ -94,12 +88,9 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         }
     }
 
-    //获取系统已连接的设备
     private fun getSystemConnectedDevices() {
         try {
-            //得到连接状态的方法
             val method = bluetoothAdapter.javaClass.getDeclaredMethod("getConnectionState")
-            //打开权限  
             method.isAccessible = true
             val state = method.invoke(bluetoothAdapter) as Int
             if (state == BluetoothAdapter.STATE_CONNECTED) {
@@ -121,7 +112,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     private val stopScanRunnable = Runnable { stopScan() }
     
     /**
-     * 搜索蓝牙设备
+     * Start a Bluetooth LE device scan
      */
     fun startScan(context: Context, resultCallback: (BluetoothDevice, Int, ByteArray?) -> Unit) {
         this.resultCallback = resultCallback
@@ -130,10 +121,12 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
                 return
             }
             if (!isLocationEnabled(context)) {
-                handleScanCallback(false, null, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, "位置服务未开启，无法搜索蓝牙设备")
+                handleScanCallback(false, null, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, 
+                        "Unable to scan for Bluetooth devices, the phone's location service is not turned on.")
                 return
             } else if (noLocationPermission(context)) {
-                handleScanCallback(false, null, ScanListener.ERROR_LACK_LOCATION_PERMISSION, "缺少定位权限，无法搜索蓝牙设备")
+                handleScanCallback(false, null, ScanListener.ERROR_LACK_LOCATION_PERMISSION, 
+                        "Unable to scan for Bluetooth devices, lack location permission.")
                 return
             }
             isScanning = true
@@ -142,7 +135,6 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         if (getScanConfig().isAcceptSysConnectedDevice) {
             getSystemConnectedDevices()
         }
-        //如果是高版本使用新的搜索方法
         if (getScanConfig().isUseBluetoothLeScanner && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if (bleScanner == null) {
                 bleScanner = bluetoothAdapter.bluetoothLeScanner
@@ -165,7 +157,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     }
     
     /**
-     * 停止搜索蓝牙设备
+     * Stop a Bluetooth LE device scan
      */
     fun stopScan() {
         mainThreadHandler.removeCallbacks(stopScanRunnable)
@@ -201,25 +193,21 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     }
 
     /**
-     * 解析广播字段
+     * Parse raw bytes of scan record
      *
-     * @param device     蓝牙设备
-     * @param rssi       信号强度
-     * @param advData 广播内容
+     * @param advData Raw bytes of scan record
      */
     fun parseScanResult(device: BluetoothDevice, rssi: Int, advData: ByteArray?, detailResult: ScanResult?) {
-        if (getScanConfig().isHideNonBleDevice && device.type != BluetoothDevice.DEVICE_TYPE_LE) {
+        if (getScanConfig().isOnlyAcceptBleDevice && device.type != BluetoothDevice.DEVICE_TYPE_LE) {
             return
         }
         resultCallback(device, rssi, advData)
         val deviceName = if (TextUtils.isEmpty(device.name)) "" else device.name
-        //三个为空则不过滤
         if ((getScanConfig().names.isEmpty() && getScanConfig().addrs.isEmpty() && getScanConfig().uuids.isEmpty()) ||
                 (getScanConfig().names.contains(device.name) || getScanConfig().addrs.contains(device.address) || acceptUuid(getScanConfig().uuids, advData))){
-            //生成
+            //create a Device instance by IDeviceCreator
             val deviceCreater = Ble.instance.bleConfig.deviceCreator
             var dev = deviceCreater?.valueOf(device, advData)
-            //只在指定的过滤器通知        
             if (dev != null || deviceCreater == null) {
                 if (dev == null) {
                     dev = Device(device)
@@ -236,7 +224,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
                 handleScanCallback(false, dev, -1, "")
             }
         }        
-        Ble.println(Ble::class.java, Log.DEBUG, "found device! [name: $deviceName, mac: ${device.address}]")
+        Ble.println(Ble::class.java, Log.DEBUG, "found device! [name: $deviceName, addr: ${device.address}]")
     }
 
     private fun acceptUuid(uuids: List<UUID>, advData: ByteArray?): Boolean {

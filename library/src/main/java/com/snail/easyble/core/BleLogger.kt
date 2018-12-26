@@ -3,16 +3,14 @@ package com.snail.easyble.core
 import android.util.Log
 
 /**
- * 描述: 蓝牙库相关日志输出
- * 时间: 2018/6/20 12:33
- * 作者: zengfansheng
+ * 蓝牙库相关日志输出
+ * date: 2018/6/20 12:33
+ * author: zengfansheng
  */
 class BleLogger {
 
     /**
-     * 控制输出级别
-     * 
-     * [.NONE], [.VERBOSE], [.DEBUG], [.INFO], [.WARN], [.ERROR]
+     * [NONE], [VERBOSE], [DEBUG], [INFO], [WARN], [ERROR]
      */
     private var printLevel = NONE
     private var filter: Filter? = null

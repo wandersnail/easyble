@@ -6,8 +6,8 @@ import android.os.Parcelable
 import com.snail.easyble.core.Device
 
 /**
- * 时间: 2018/4/16 10:28
- * 作者: zengfansheng
+ * date: 2018/4/16 10:28
+ * author: zengfansheng
  */
 class MyDevice(originalDevice: BluetoothDevice) : Device(originalDevice), Parcelable {
     /**
