@@ -567,7 +567,6 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                                 if (i < requestQueue.size - 1) {
                                     if (requestQueue[i + 1].priority < request.priority) {
                                         index = i + 1
-                                        println("进来了")
                                         return@run
                                     }
                                 } else {
