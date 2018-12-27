@@ -247,7 +247,8 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                     }
                     executeNextRequest()
                 }
-                else -> {}
+                else -> {
+                }
             }
         }
     }
@@ -461,7 +462,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
      * Read the RSSI for a connected remote device.
      */
     @JvmOverloads
-    fun readRssi(requestId: String, callback: RequestCallback<Events.RemoteRssiRead>? = null, priority: Int = 0) {        
+    fun readRssi(requestId: String, callback: RequestCallback<Events.RemoteRssiRead>? = null, priority: Int = 0) {
         enqueue(Request.newReadRssiRequest(requestId, callback, priority))
     }
 
@@ -557,14 +558,14 @@ abstract class BaseConnection internal constructor(val device: Device, protected
             synchronized(this) {
                 if (currentRequest == null) {
                     executeRequest(request)
-                } else {                    
+                } else {
                     //Determine the location of the task in the queue based on priority
                     var index = -1
                     run {
-                        requestQueue.forEachIndexed { i, req -> 
+                        requestQueue.forEachIndexed { i, req ->
                             if (req.priority >= request.priority) {
                                 if (i < requestQueue.size - 1) {
-                                    if (requestQueue[i+1].priority < request.priority) {
+                                    if (requestQueue[i + 1].priority < request.priority) {
                                         index = i + 1
                                         println("进来了")
                                         return@run
@@ -572,7 +573,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                                 } else {
                                     index = i + 1
                                 }
-                            }                            
+                            }
                         }
                     }
                     when {
@@ -643,7 +644,8 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                                     Request.RequestType.READ_CHARACTERISTIC -> executeReadCharacteristic(characteristic, request)
                                     Request.RequestType.READ_DESCRIPTOR -> executeReadDescriptor(characteristic, request)
                                     Request.RequestType.WRITE_CHARACTERISTIC -> executeWriteCharacteristic(characteristic, request)
-                                    else -> {}
+                                    else -> {
+                                    }
                                 }
                             } else {
                                 handleFaildCallback(request, IConnection.REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC, true)
