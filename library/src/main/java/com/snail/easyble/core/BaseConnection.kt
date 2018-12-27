@@ -342,7 +342,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
 
     private fun handleFaildCallback(request: Request, failType: Int, executeNext: Boolean) {
         if (request.callback != null) {
-            handleRequestCallback(request.callback!!, Events.newRequestFailed(device, request.requestId, request.type, failType, request.value))
+            handleRequestCallback(request.callback, Events.newRequestFailed(device, request.requestId, request.type, failType, request.value))
         } else {
             onRequestFialed(request.requestId, request.type, failType, request.value)
         }
@@ -388,45 +388,45 @@ abstract class BaseConnection internal constructor(val device: Device, protected
      */
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     @JvmOverloads
-    fun changeMtu(requestId: String, @IntRange(from = 23, to = 517) mtu: Int, callback: RequestCallback<Events.MtuChanged>? = null) {
-        enqueue(Request.newChangeMtuRequest(requestId, mtu, callback))
+    fun changeMtu(requestId: String, @IntRange(from = 23, to = 517) mtu: Int, callback: RequestCallback<Events.MtuChanged>? = null, priority: Int = 0) {
+        enqueue(Request.newChangeMtuRequest(requestId, mtu, callback, priority))
     }
 
     /**
      * Reads the requested characteristic from the associated remote device.
      */
     @JvmOverloads
-    fun readCharacteristic(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.CharacteristicRead>? = null) {
+    fun readCharacteristic(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.CharacteristicRead>? = null, priority: Int = 0) {
         if (checkUuidExists(requestId, Request.RequestType.READ_CHARACTERISTIC, null, callback, service, characteristic)) {
-            enqueue(Request.newReadCharacteristicRequest(requestId, service, characteristic, callback))
+            enqueue(Request.newReadCharacteristicRequest(requestId, service, characteristic, callback, priority))
         }
     }
 
     @JvmOverloads
-    fun enableNotification(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.NotificationChanged>? = null) {
+    fun enableNotification(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.NotificationChanged>? = null, priority: Int = 0) {
         if (checkUuidExists(requestId, Request.RequestType.ENABLE_NOTIFICATION, null, callback, service, characteristic)) {
-            enqueue(Request.newEnableNotificationRequest(requestId, service, characteristic, callback))
+            enqueue(Request.newEnableNotificationRequest(requestId, service, characteristic, callback, priority))
         }
     }
 
     @JvmOverloads
-    fun disableNotification(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.NotificationChanged>? = null) {
+    fun disableNotification(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.NotificationChanged>? = null, priority: Int = 0) {
         if (checkUuidExists(requestId, Request.RequestType.DISABLE_NOTIFICATION, null, callback, service, characteristic)) {
-            enqueue(Request.newDisableNotificationRequest(requestId, service, characteristic, callback))
+            enqueue(Request.newDisableNotificationRequest(requestId, service, characteristic, callback, priority))
         }
     }
 
     @JvmOverloads
-    fun enableIndication(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.IndicationChanged>? = null) {
+    fun enableIndication(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.IndicationChanged>? = null, priority: Int = 0) {
         if (checkUuidExists(requestId, Request.RequestType.ENABLE_INDICATION, null, callback, service, characteristic)) {
-            enqueue(Request.newEnableIndicationRequest(requestId, service, characteristic, callback))
+            enqueue(Request.newEnableIndicationRequest(requestId, service, characteristic, callback, priority))
         }
     }
 
     @JvmOverloads
-    fun disableIndication(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.IndicationChanged>? = null) {
+    fun disableIndication(requestId: String, service: UUID, characteristic: UUID, callback: RequestCallback<Events.IndicationChanged>? = null, priority: Int = 0) {
         if (checkUuidExists(requestId, Request.RequestType.DISABLE_INDICATION, null, callback, service, characteristic)) {
-            enqueue(Request.newDisableIndicationRequest(requestId, service, characteristic, callback))
+            enqueue(Request.newDisableIndicationRequest(requestId, service, characteristic, callback, priority))
         }
     }
 
@@ -434,9 +434,9 @@ abstract class BaseConnection internal constructor(val device: Device, protected
      * Reads the value for a given descriptor from the associated remote device.
      */
     @JvmOverloads
-    fun readDescriptor(requestId: String, service: UUID, characteristic: UUID, descriptor: UUID, callback: RequestCallback<Events.DescriptorRead>? = null) {
+    fun readDescriptor(requestId: String, service: UUID, characteristic: UUID, descriptor: UUID, callback: RequestCallback<Events.DescriptorRead>? = null, priority: Int = 0) {
         if (checkUuidExists(requestId, Request.RequestType.READ_DESCRIPTOR, null, callback, service, characteristic)) {
-            enqueue(Request.newReadDescriptorRequest(requestId, service, characteristic, descriptor, callback))
+            enqueue(Request.newReadDescriptorRequest(requestId, service, characteristic, descriptor, callback, priority))
         }
     }
 
@@ -444,7 +444,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
      * Writes a given characteristic and its values to the associated remote device.
      */
     @JvmOverloads
-    fun writeCharacteristic(requestId: String, service: UUID, characteristic: UUID, value: ByteArray?, callback: RequestCallback<Events.CharacteristicWrite>? = null) {
+    fun writeCharacteristic(requestId: String, service: UUID, characteristic: UUID, value: ByteArray?, callback: RequestCallback<Events.CharacteristicWrite>? = null, priority: Int = 0) {
         if (value == null || value.isEmpty()) {
             if (callback != null) {
                 callback.onFail(Events.newRequestFailed(device, requestId, Request.RequestType.WRITE_CHARACTERISTIC, IConnection.REQUEST_FAIL_TYPE_VALUE_IS_NULL_OR_EMPTY, value!!))
@@ -453,7 +453,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
             }
             return
         } else if (checkUuidExists(requestId, Request.RequestType.WRITE_CHARACTERISTIC, value, callback, service, characteristic)) {
-            enqueue(Request.newWriteCharacteristicRequest(requestId, service, characteristic, value, callback))
+            enqueue(Request.newWriteCharacteristicRequest(requestId, service, characteristic, value, callback, priority))
         }
     }
 
@@ -461,8 +461,8 @@ abstract class BaseConnection internal constructor(val device: Device, protected
      * Read the RSSI for a connected remote device.
      */
     @JvmOverloads
-    fun readRssi(requestId: String, callback: RequestCallback<Events.RemoteRssiRead>? = null) {        
-        enqueue(Request.newReadRssiRequest(requestId, callback))
+    fun readRssi(requestId: String, callback: RequestCallback<Events.RemoteRssiRead>? = null, priority: Int = 0) {        
+        enqueue(Request.newReadRssiRequest(requestId, callback, priority))
     }
 
     /**
@@ -470,8 +470,8 @@ abstract class BaseConnection internal constructor(val device: Device, protected
      */
     @RequiresApi(Build.VERSION_CODES.O)
     @JvmOverloads
-    fun readPhy(requestId: String, callback: RequestCallback<Events.RemoteRssiRead>? = null) {
-        enqueue(Request.newReadPhyRequest(requestId, callback))
+    fun readPhy(requestId: String, callback: RequestCallback<Events.RemoteRssiRead>? = null, priority: Int = 0) {
+        enqueue(Request.newReadPhyRequest(requestId, callback, priority))
     }
 
     /**
@@ -487,8 +487,8 @@ abstract class BaseConnection internal constructor(val device: Device, protected
      */
     @RequiresApi(Build.VERSION_CODES.O)
     @JvmOverloads
-    fun setPreferredPhy(requestId: String, txPhy: Int, rxPhy: Int, phyOptions: Int, callback: RequestCallback<Events.RemoteRssiRead>? = null) {
-        enqueue(Request.newSetPreferredPhyRequest(requestId, txPhy, rxPhy, phyOptions, callback))
+    fun setPreferredPhy(requestId: String, txPhy: Int, rxPhy: Int, phyOptions: Int, callback: RequestCallback<Events.RemoteRssiRead>? = null, priority: Int = 0) {
+        enqueue(Request.newSetPreferredPhyRequest(requestId, txPhy, rxPhy, phyOptions, callback, priority))
     }
 
     //check whether the Service or Characteristic or Descriptore exists
@@ -557,8 +557,29 @@ abstract class BaseConnection internal constructor(val device: Device, protected
             synchronized(this) {
                 if (currentRequest == null) {
                     executeRequest(request)
-                } else {
-                    requestQueue.add(request)
+                } else {                    
+                    //Determine the location of the task in the queue based on priority
+                    var index = -1
+                    run {
+                        requestQueue.forEachIndexed { i, req -> 
+                            if (req.priority >= request.priority) {
+                                if (i < requestQueue.size - 1) {
+                                    if (requestQueue[i+1].priority < request.priority) {
+                                        index = i + 1
+                                        println("进来了")
+                                        return@run
+                                    }
+                                } else {
+                                    index = i + 1
+                                }
+                            }                            
+                        }
+                    }
+                    when {
+                        index == -1 -> requestQueue.add(0, request)
+                        index >= requestQueue.size -> requestQueue.add(request)
+                        else -> requestQueue.add(index, request)
+                    }
                 }
             }
         }
