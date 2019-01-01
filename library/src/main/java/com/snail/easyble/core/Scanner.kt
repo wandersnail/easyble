@@ -17,8 +17,7 @@ import android.support.v4.content.ContextCompat
 import android.text.TextUtils
 import android.util.Log
 import com.snail.easyble.callback.ScanListener
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
+import com.snail.easyble.util.BleUtils
 import java.util.*
 
 
@@ -204,7 +203,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         resultCallback(device, rssi, advData)
         val deviceName = if (TextUtils.isEmpty(device.name)) "" else device.name
         if ((getScanConfig().names.isEmpty() && getScanConfig().addrs.isEmpty() && getScanConfig().uuids.isEmpty()) ||
-                (getScanConfig().names.contains(device.name) || getScanConfig().addrs.contains(device.address) || acceptUuid(getScanConfig().uuids, advData))){
+                (getScanConfig().names.contains(device.name) || getScanConfig().addrs.contains(device.address) || BleUtils.hasUuid(getScanConfig().uuids, advData))){
             //create a Device instance by IDeviceCreator
             val deviceCreater = Ble.instance.bleConfig.deviceCreator
             var dev = deviceCreater?.valueOf(device, advData)
@@ -225,42 +224,6 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
             }
         }        
         Ble.println(Ble::class.java, Log.DEBUG, "found device! [name: $deviceName, addr: ${device.address}]")
-    }
-
-    private fun acceptUuid(uuids: List<UUID>, advData: ByteArray?): Boolean {
-        try {
-            val buffer = ByteBuffer.wrap(advData).order(ByteOrder.LITTLE_ENDIAN)
-            while (buffer.remaining() > 2) {
-                var length = buffer.get().toInt()
-                if (length == 0) break
-
-                val type = buffer.get().toInt()
-                when (type) {
-                    0x02, // Partial list of 16-bit UUIDs
-                    0x03 // Complete list of 16-bit UUIDs
-                    -> while (length >= 2) {
-                        if (uuids.contains(UUID.fromString(String.format("%08x-0000-1000-8000-00805f9b34fb", buffer.short)))) {
-                            return true
-                        }
-                        length -= 2
-                    }
-                    0x06, // Partial list of 128-bit UUIDs
-                    0x07 // Complete list of 128-bit UUIDs
-                    -> while (length >= 16) {
-                        val lsb = buffer.long
-                        val msb = buffer.long
-                        if (uuids.contains(UUID(msb, lsb))) {
-                            return true
-                        }
-                        length -= 16
-                    }
-                    else -> buffer.position(buffer.position() + length - 1)
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return false
     }
         
     fun onBluethoothOff() {

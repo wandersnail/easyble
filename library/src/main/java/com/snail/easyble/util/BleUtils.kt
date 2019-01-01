@@ -115,5 +115,61 @@ object BleUtils {
         val lsb = buffer.long
         val msb = buffer.long
         return UUID(msb, lsb)
-    } 
+    }
+
+    /**
+     * Does raw bytes of scan record contain the uuid
+     */
+    fun hasUuid(uuid: UUID, advData: ByteArray?): Boolean {
+        return hasUuid(listOf(uuid), advData)
+    }
+
+    /**
+     * Does raw bytes of scan record contain one uuid in the list
+     */
+    fun hasUuid(uuids: List<UUID>, advData: ByteArray?): Boolean {
+        try {
+            val buffer = ByteBuffer.wrap(advData).order(ByteOrder.LITTLE_ENDIAN)
+            while (buffer.remaining() > 2) {
+                var length = buffer.get().toInt()
+                if (length == 0) break
+
+                val type = buffer.get().toInt()
+                when (type) {
+                    0x02, // Partial list of 16-bit UUIDs
+                    0x03, // Complete list of 16-bit UUIDs
+                    0x14 // List of 16-bit Service Solicitation UUIDs    
+                    -> while (length >= 2) {
+                        if (uuids.contains(UUID.fromString(String.format(Locale.US, "%08x-0000-1000-8000-00805f9b34fb", buffer.short)))) {
+                            return true
+                        }
+                        length -= 2
+                    }
+                    0x04,
+                    0x05
+                    -> while (length >= 4) {
+                        if (uuids.contains(UUID.fromString(String.format(Locale.US, "%08x-0000-1000-8000-00805f9b34fb", buffer.int)))) {
+                            return true
+                        }
+                        length -= 4
+                    }
+                    0x06, // Partial list of 128-bit UUIDs
+                    0x07, // Complete list of 128-bit UUIDs
+                    0x15 // List of 128-bit Service Solicitation UUIDs
+                    -> while (length >= 16) {
+                        val lsb = buffer.long
+                        val msb = buffer.long
+                        if (uuids.contains(UUID(msb, lsb))) {
+                            return true
+                        }
+                        length -= 16
+                    }
+                    else -> buffer.position(buffer.position() + length - 1)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return false
+    }
 }
