@@ -24,12 +24,12 @@ object Events {
     /**
      * onCharacteristicRead
      */
-    class CharacteristicRead internal constructor(device: Device, requestId: String, val characteristic: GattCharacteristic) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class CharacteristicRead internal constructor(device: Device, tag: String, val characteristic: GattCharacteristic) : BothDeviceAndTagEvent<Device>(device, tag)
 
     /**
      * onCharacteristicWrite
      */
-    class CharacteristicWrite internal constructor(device: Device, requestId: String, val characteristic: GattCharacteristic) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class CharacteristicWrite internal constructor(device: Device, tag: String, val characteristic: GattCharacteristic) : BothDeviceAndTagEvent<Device>(device, tag)
 
     class ConnectFailed internal constructor(val device: Device?,
                                             /**
@@ -54,45 +54,45 @@ object Events {
     /**
      * onDescriptorRead
      */
-    class DescriptorRead internal constructor(device: Device, requestId: String, val descriptor: GattDescriptor) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class DescriptorRead internal constructor(device: Device, tag: String, val descriptor: GattDescriptor) : BothDeviceAndTagEvent<Device>(device, tag)
 
     /**
      * indication
      */
-    class IndicationChanged internal constructor(device: Device, requestId: String, val descriptor: GattDescriptor, val isEnabled: Boolean) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class IndicationChanged internal constructor(device: Device, tag: String, val descriptor: GattDescriptor, val isEnabled: Boolean) : BothDeviceAndTagEvent<Device>(device, tag)
 
     /**
      * onMtuChanged，MTU change success
      */
-    class MtuChanged internal constructor(device: Device, requestId: String,
+    class MtuChanged internal constructor(device: Device, tag: String,
                                          /** the new value of MTU  */
                                          @IntRange(from = 23, to = 517)
-                                         val mtu: Int) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+                                         val mtu: Int) : BothDeviceAndTagEvent<Device>(device, tag)
 
     /**
      * notification
      */
-    class NotificationChanged internal constructor(device: Device, requestId: String, val descriptor: GattDescriptor, val isEnabled: Boolean) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class NotificationChanged internal constructor(device: Device, tag: String, val descriptor: GattDescriptor, val isEnabled: Boolean) : BothDeviceAndTagEvent<Device>(device, tag)
 
     /**
      * onReadRemoteRssi
      */
-    class RemoteRssiRead internal constructor(device: Device, requestId: String, val rssi: Int) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class RemoteRssiRead internal constructor(device: Device, tag: String, val rssi: Int) : BothDeviceAndTagEvent<Device>(device, tag)
 
     /**
      * onPhyRead
      */
-    class PhyRead internal constructor(device: Device, requestId: String, val txPhy: Int, val rxPhy: Int) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class PhyRead internal constructor(device: Device, tag: String, val txPhy: Int, val rxPhy: Int) : BothDeviceAndTagEvent<Device>(device, tag)
 
     /**
      * onPhyUpdate
      */
-    class PhyUpdate internal constructor(device: Device, requestId: String, val txPhy: Int, val rxPhy: Int) : BothDeviceAndRequestIdEvent<Device>(device, requestId)
+    class PhyUpdate internal constructor(device: Device, tag: String, val txPhy: Int, val rxPhy: Int) : BothDeviceAndTagEvent<Device>(device, tag)
     
     /**
      * Request failure events, such as read characteristic, write characteristic, enable notifications, etc.
      */
-    class RequestFailed internal constructor(val device: Device, val requestId: String, val requestType: Request.RequestType,
+    class RequestFailed internal constructor(val device: Device, val tag: String, val requestType: Request.RequestType,
                                             /**
                                              * One of [IConnection.REQUEST_FAIL_TYPE_REQUEST_FAILED],
                                              * [IConnection.REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC],
@@ -118,12 +118,12 @@ object Events {
         return CharacteristicChanged(device, characteristic)
     }
 
-    fun newCharacteristicRead(device: Device, requestId: String, characteristic: GattCharacteristic): CharacteristicRead {
-        return CharacteristicRead(device, requestId, characteristic)
+    fun newCharacteristicRead(device: Device, tag: String, characteristic: GattCharacteristic): CharacteristicRead {
+        return CharacteristicRead(device, tag, characteristic)
     }
 
-    fun newCharacteristicWrite(device: Device, requestId: String, characteristic: GattCharacteristic): CharacteristicWrite {
-        return CharacteristicWrite(device, requestId, characteristic)
+    fun newCharacteristicWrite(device: Device, tag: String, characteristic: GattCharacteristic): CharacteristicWrite {
+        return CharacteristicWrite(device, tag, characteristic)
     }
 
     fun newConnectFailed(device: Device?, code: Int): ConnectFailed {
@@ -138,39 +138,39 @@ object Events {
         return ConnectTimeout(device, type)
     }
 
-    fun newDescriptorRead(device: Device, requestId: String, descriptor: GattDescriptor): DescriptorRead {
-        return DescriptorRead(device, requestId, descriptor)
+    fun newDescriptorRead(device: Device, tag: String, descriptor: GattDescriptor): DescriptorRead {
+        return DescriptorRead(device, tag, descriptor)
     }
 
-    fun newIndicationChanged(device: Device, requestId: String, descriptor: GattDescriptor, isEnabled: Boolean): IndicationChanged {
-        return IndicationChanged(device, requestId, descriptor, isEnabled)
+    fun newIndicationChanged(device: Device, tag: String, descriptor: GattDescriptor, isEnabled: Boolean): IndicationChanged {
+        return IndicationChanged(device, tag, descriptor, isEnabled)
     }
 
-    fun newMtuChanged(device: Device, requestId: String, @IntRange(from = 23, to = 517) mtu: Int): MtuChanged {
-        return MtuChanged(device, requestId, mtu)
+    fun newMtuChanged(device: Device, tag: String, @IntRange(from = 23, to = 517) mtu: Int): MtuChanged {
+        return MtuChanged(device, tag, mtu)
     }
 
-    fun newNotificationChanged(device: Device, requestId: String, descriptor: GattDescriptor, isEnabled: Boolean): NotificationChanged {
-        return NotificationChanged(device, requestId, descriptor, isEnabled)
+    fun newNotificationChanged(device: Device, tag: String, descriptor: GattDescriptor, isEnabled: Boolean): NotificationChanged {
+        return NotificationChanged(device, tag, descriptor, isEnabled)
     }
 
-    fun newRemoteRssiRead(device: Device, requestId: String, rssi: Int): RemoteRssiRead {
-        return RemoteRssiRead(device, requestId, rssi)
+    fun newRemoteRssiRead(device: Device, tag: String, rssi: Int): RemoteRssiRead {
+        return RemoteRssiRead(device, tag, rssi)
     }
 
-    fun newRequestFailed(device: Device, requestId: String, requestType: Request.RequestType, failType: Int, src: ByteArray?): RequestFailed {
-        return RequestFailed(device, requestId, requestType, failType, src)
+    fun newRequestFailed(device: Device, tag: String, requestType: Request.RequestType, failType: Int, src: ByteArray?): RequestFailed {
+        return RequestFailed(device, tag, requestType, failType, src)
     }
 
     fun newLogChanged(log: String, level: Int): LogChanged {
         return LogChanged(log, level)
     }
 
-    fun newPhyRead(device: Device, requestId: String, txPhy: Int, rxPhy: Int): PhyRead {
-        return PhyRead(device, requestId, txPhy, rxPhy)
+    fun newPhyRead(device: Device, tag: String, txPhy: Int, rxPhy: Int): PhyRead {
+        return PhyRead(device, tag, txPhy, rxPhy)
     }
 
-    fun newPhyUpdate(device: Device, requestId: String, txPhy: Int, rxPhy: Int): PhyUpdate {
-        return PhyUpdate(device, requestId, txPhy, rxPhy)
+    fun newPhyUpdate(device: Device, tag: String, txPhy: Int, rxPhy: Int): PhyUpdate {
+        return PhyUpdate(device, tag, txPhy, rxPhy)
     }
 }

@@ -13,25 +13,25 @@ import java.util.*
  */
 interface IConnection {
 
-    fun onCharacteristicRead(requestId: String, characteristic: BluetoothGattCharacteristic)
+    fun onCharacteristicRead(tag: String, characteristic: BluetoothGattCharacteristic)
 
     fun onCharacteristicChanged(characteristic: BluetoothGattCharacteristic)
 
-    fun onReadRemoteRssi(requestId: String, rssi: Int)
+    fun onReadRemoteRssi(tag: String, rssi: Int)
 
-    fun onMtuChanged(requestId: String, mtu: Int)
+    fun onMtuChanged(tag: String, mtu: Int)
 
-    fun onRequestFialed(requestId: String, requestType: Request.RequestType, failType: Int, value: ByteArray?)
+    fun onRequestFialed(tag: String, requestType: Request.RequestType, failType: Int, value: ByteArray?)
 
-    fun onDescriptorRead(requestId: String, descriptor: BluetoothGattDescriptor)
+    fun onDescriptorRead(tag: String, descriptor: BluetoothGattDescriptor)
 
-    fun onNotificationChanged(requestId: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean)
+    fun onNotificationChanged(tag: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean)
 
-    fun onIndicationChanged(requestId: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean)
+    fun onIndicationChanged(tag: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean)
 
-    fun onCharacteristicWrite(requestId: String, characteristic: GattCharacteristic)
+    fun onCharacteristicWrite(tag: String, characteristic: GattCharacteristic)
         
-    fun onPhyReadOrUpdate(requestId: String, read: Boolean, txPhy: Int, rxPhy: Int)
+    fun onPhyReadOrUpdate(tag: String, read: Boolean, txPhy: Int, rxPhy: Int)
 
     companion object {
         val clientCharacteristicConfig = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")!!

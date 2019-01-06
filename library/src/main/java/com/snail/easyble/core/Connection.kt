@@ -357,8 +357,8 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         return BleUtils.bytesToHexString(value).trim { it <= ' ' }
     }
 
-    override fun onCharacteristicRead(requestId: String, characteristic: BluetoothGattCharacteristic) {
-        Ble.instance.postEvent(Events.newCharacteristicRead(device, requestId, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, characteristic.value)))
+    override fun onCharacteristicRead(tag: String, characteristic: BluetoothGattCharacteristic) {
+        Ble.instance.postEvent(Events.newCharacteristicRead(device, tag, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, characteristic.value)))
         Ble.println(javaClass, Log.DEBUG, "characteristic read! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
     }
 
@@ -367,51 +367,51 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         Ble.println(javaClass, Log.INFO, "characteristic change! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
     }
 
-    override fun onReadRemoteRssi(requestId: String, rssi: Int) {
-        Ble.instance.postEvent(Events.newRemoteRssiRead(device, requestId, rssi))
+    override fun onReadRemoteRssi(tag: String, rssi: Int) {
+        Ble.instance.postEvent(Events.newRemoteRssiRead(device, tag, rssi))
         Ble.println(javaClass, Log.DEBUG, "rssi read! [addr: ${device.addr}, rssi: $rssi]")
     }
 
-    override fun onMtuChanged(requestId: String, mtu: Int) {
-        Ble.instance.postEvent(Events.newMtuChanged(device, requestId, mtu))
+    override fun onMtuChanged(tag: String, mtu: Int) {
+        Ble.instance.postEvent(Events.newMtuChanged(device, tag, mtu))
         Ble.println(javaClass, Log.DEBUG, "mtu change! [addr: ${device.addr}, mtu: $mtu]")
     }
 
-    override fun onRequestFialed(requestId: String, requestType: Request.RequestType, failType: Int, value: ByteArray?) {
-        Ble.instance.postEvent(Events.newRequestFailed(device, requestId, requestType, failType, value!!))
-        Ble.println(javaClass, Log.DEBUG, "request failed! [addr: ${device.addr}, requestId: $requestId, failType: $failType]")
+    override fun onRequestFialed(tag: String, requestType: Request.RequestType, failType: Int, value: ByteArray?) {
+        Ble.instance.postEvent(Events.newRequestFailed(device, tag, requestType, failType, value!!))
+        Ble.println(javaClass, Log.DEBUG, "request failed! [addr: ${device.addr}, tag: $tag, failType: $failType]")
     }
 
-    override fun onDescriptorRead(requestId: String, descriptor: BluetoothGattDescriptor) {
+    override fun onDescriptorRead(tag: String, descriptor: BluetoothGattDescriptor) {
         val charac = descriptor.characteristic
-        Ble.instance.postEvent(Events.newDescriptorRead(device, requestId, GattDescriptor(charac.service.uuid, charac.uuid, descriptor.uuid, descriptor.value)))
+        Ble.instance.postEvent(Events.newDescriptorRead(device, tag, GattDescriptor(charac.service.uuid, charac.uuid, descriptor.uuid, descriptor.value)))
         Ble.println(javaClass, Log.DEBUG, "descriptor read! [addr: ${device.addr}, value: ${getHex(descriptor.value)}]")
     }
 
-    override fun onNotificationChanged(requestId: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean) {
+    override fun onNotificationChanged(tag: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean) {
         val charac = descriptor.characteristic
-        Ble.instance.postEvent(Events.newNotificationChanged(device, requestId, GattDescriptor(charac.service.uuid, charac.uuid, descriptor.uuid, descriptor.value), isEnabled))
+        Ble.instance.postEvent(Events.newNotificationChanged(device, tag, GattDescriptor(charac.service.uuid, charac.uuid, descriptor.uuid, descriptor.value), isEnabled))
         Ble.println(javaClass, Log.DEBUG, "${if (isEnabled) "notification enabled!" else "notification disabled!"} [addr: ${device.addr}]")
     }
 
-    override fun onIndicationChanged(requestId: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean) {
+    override fun onIndicationChanged(tag: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean) {
         val characteristic = descriptor.characteristic
-        Ble.instance.postEvent(Events.newIndicationChanged(device, requestId, GattDescriptor(characteristic.service.uuid, characteristic.uuid, descriptor.uuid, descriptor.value), isEnabled))
+        Ble.instance.postEvent(Events.newIndicationChanged(device, tag, GattDescriptor(characteristic.service.uuid, characteristic.uuid, descriptor.uuid, descriptor.value), isEnabled))
         Ble.println(javaClass, Log.DEBUG, "${if (isEnabled) "indication enabled!" else "indication disabled"} [addr: ${device.addr}]")
     }
 
-    override fun onCharacteristicWrite(requestId: String, characteristic: GattCharacteristic) {
-        Ble.instance.postEvent(Events.newCharacteristicWrite(device, requestId, characteristic))
+    override fun onCharacteristicWrite(tag: String, characteristic: GattCharacteristic) {
+        Ble.instance.postEvent(Events.newCharacteristicWrite(device, tag, characteristic))
         Ble.println(javaClass, Log.DEBUG, "write success! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
     }
 
-    override fun onPhyReadOrUpdate(requestId: String, read: Boolean, txPhy: Int, rxPhy: Int) {
+    override fun onPhyReadOrUpdate(tag: String, read: Boolean, txPhy: Int, rxPhy: Int) {
         val event = if (read) {
             Ble.println(javaClass, Log.DEBUG, "phy read! [addr: ${device.addr}, tvPhy: $txPhy, rxPhy: $rxPhy]")
-            Events.newPhyRead(device, requestId, txPhy, rxPhy)
+            Events.newPhyRead(device, tag, txPhy, rxPhy)
         } else {
             Ble.println(javaClass, Log.DEBUG, "phy update! [addr: ${device.addr}, tvPhy: $txPhy, rxPhy: $rxPhy]")
-            Events.newPhyUpdate(device, requestId, txPhy, rxPhy)
+            Events.newPhyUpdate(device, tag, txPhy, rxPhy)
         }
         Ble.instance.postEvent(event)        
     }
