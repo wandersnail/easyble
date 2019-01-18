@@ -170,7 +170,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                     connHandler.removeMessages(MSG_REQUEST_TIMEOUT)
                     connHandler.sendMessageDelayed(Message.obtain(connHandler, MSG_REQUEST_TIMEOUT, currentRequest), config.requestTimeoutMillis.toLong())
                     try {
-                        java.lang.Thread.sleep(currentRequest!!.writeDelay.toLong())
+                        Thread.sleep(currentRequest!!.writeDelay.toLong())
                     } catch (e: InterruptedException) {
                         e.printStackTrace()
                     }
@@ -697,7 +697,10 @@ abstract class BaseConnection internal constructor(val device: Device, protected
             request.writeDelay = config.packageWriteDelayMillis
             val packSize = config.packageSize
             val requestWriteDelayMillis = config.requestWriteDelayMillis
-            Thread.sleep((if (requestWriteDelayMillis > 0) requestWriteDelayMillis else request.writeDelay).toLong())
+            val reqDelay = if (requestWriteDelayMillis > 0) requestWriteDelayMillis else request.writeDelay
+            if (reqDelay > 0) {
+                Thread.sleep(reqDelay.toLong())
+            }
             if (request.value!!.size > packSize) {
                 val list = BleUtils.splitPackage(request.value!!, packSize)
                 if (!request.waitWriteResult) { //without waiting
@@ -729,7 +732,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
             }
             if (!request.waitWriteResult) {
                 if (request.callback != null) {
-                    handleRequestCallback(request.callback!!, Events.newCharacteristicWrite(device, request.tag, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, request.value!!)))
+                    handleRequestCallback(request.callback, Events.newCharacteristicWrite(device, request.tag, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, request.value!!)))
                 } else {
                     onCharacteristicWrite(request.tag, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, request.value!!))
                 }
