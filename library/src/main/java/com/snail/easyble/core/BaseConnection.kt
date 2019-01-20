@@ -169,12 +169,14 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                 } else {
                     connHandler.removeMessages(MSG_REQUEST_TIMEOUT)
                     connHandler.sendMessageDelayed(Message.obtain(connHandler, MSG_REQUEST_TIMEOUT, currentRequest), config.requestTimeoutMillis.toLong())
-                    try {
-                        Thread.sleep(currentRequest!!.writeDelay.toLong())
-                    } catch (e: InterruptedException) {
-                        e.printStackTrace()
+                    val delay = currentRequest!!.writeDelay.toLong()
+                    if (delay > 0) {
+                        val req = currentRequest
+                        Thread.sleep(delay)
+                        if (req != currentRequest) {
+                            return
+                        }
                     }
-
                     currentRequest!!.sendingBytes = currentRequest!!.remainQueue!!.remove()
                     if (writeFail(characteristic, currentRequest!!.sendingBytes!!)) {
                         handleWriteFailed(currentRequest!!)
@@ -300,14 +302,14 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     override fun onPhyRead(gatt: BluetoothGatt?, txPhy: Int, rxPhy: Int, status: Int) {
-        handlePhyReadOrUpdate(true, gatt, txPhy, rxPhy, status)
+        handlePhyReadOrUpdate(true, txPhy, rxPhy, status)
     }
 
     override fun onPhyUpdate(gatt: BluetoothGatt?, txPhy: Int, rxPhy: Int, status: Int) {
-        handlePhyReadOrUpdate(false, gatt, txPhy, rxPhy, status)
+        handlePhyReadOrUpdate(false, txPhy, rxPhy, status)
     }
 
-    private fun handlePhyReadOrUpdate(read: Boolean, gatt: BluetoothGatt?, txPhy: Int, rxPhy: Int, status: Int) {
+    private fun handlePhyReadOrUpdate(read: Boolean, txPhy: Int, rxPhy: Int, status: Int) {
         if (currentRequest != null) {
             if ((read && currentRequest!!.type == Request.RequestType.READ_PHY) || ((!read && currentRequest!!.type == Request.RequestType.SET_PREFERRED_PHY))) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -695,19 +697,25 @@ abstract class BaseConnection internal constructor(val device: Device, protected
         try {
             request.waitWriteResult = config.isWaitWriteResult
             request.writeDelay = config.packageWriteDelayMillis
-            val packSize = config.packageSize
             val requestWriteDelayMillis = config.requestWriteDelayMillis
             val reqDelay = if (requestWriteDelayMillis > 0) requestWriteDelayMillis else request.writeDelay
             if (reqDelay > 0) {
                 Thread.sleep(reqDelay.toLong())
+                if (request != currentRequest) {
+                    return
+                }
             }
-            if (request.value!!.size > packSize) {
-                val list = BleUtils.splitPackage(request.value!!, packSize)
+            if (request.value!!.size > config.packageSize) {
+                val list = BleUtils.splitPackage(request.value!!, config.packageSize)
                 if (!request.waitWriteResult) { //without waiting
+                    val delay = request.writeDelay.toLong()
                     for (i in list.indices) {
                         val bytes = list[i]
-                        if (i > 0) {
-                            Thread.sleep(request.writeDelay.toLong())
+                        if (i > 0 && delay > 0) {
+                            Thread.sleep(delay)
+                            if (request != currentRequest) {
+                                return
+                            }
                         }
                         if (writeFail(characteristic, bytes)) {
                             handleWriteFailed(request)
@@ -741,7 +749,6 @@ abstract class BaseConnection internal constructor(val device: Device, protected
         } catch (e: Exception) {
             handleWriteFailed(request)
         }
-
     }
 
     private fun handleWriteFailed(request: Request) {

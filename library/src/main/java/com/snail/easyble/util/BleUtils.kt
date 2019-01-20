@@ -14,14 +14,15 @@ object BleUtils {
         if (src == null || src.isEmpty()) {
             return ""
         }
-        for (aSrc in src) {
-            val v = aSrc.toInt() and 0xFF
-            val hv = Integer.toHexString(v)
+        for (i in 0 until src.size) {
+            val hv = Integer.toHexString(src[i].toInt() and 0xFF)
             if (hv.length < 2) {
                 stringBuilder.append(0)
             }
             stringBuilder.append(hv)
-            stringBuilder.append(" ")
+            if (src.size - 1 != i) {
+                stringBuilder.append(" ")
+            }
         }
         return stringBuilder.toString().toUpperCase(Locale.ENGLISH)
     }

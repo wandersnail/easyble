@@ -223,7 +223,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
                 handleScanCallback(false, dev, -1, "")
             }
         }        
-        Ble.println(Ble::class.java, Log.DEBUG, "found device! [name: $deviceName, addr: ${device.address}]")
+        Ble.println(Ble::class.java, Log.DEBUG, "found device! [name: ${if (deviceName.isEmpty()) "N/A" else deviceName}, addr: ${device.address}]")
     }
         
     fun onBluethoothOff() {
