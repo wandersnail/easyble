@@ -4,12 +4,12 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'com.novoda.bintray-release'
 
 android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdkVersion Integer.parseInt(COMPILE_SDK_VERSION)
     defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion Integer.parseInt(MIN_SDK_VERSION)
+        targetSdkVersion Integer.parseInt(TARGET_SDK_VERSION)
         versionCode 1
-        versionName "$lib_version"
+        versionName '1.1.6'
     }
 
     buildTypes {
@@ -45,7 +45,7 @@ publish {
     userOrg = 'wandersnail' //bintray.com用户名  
     groupId = 'com.github.wandersnail' //jcenter上的路径  
     artifactId = 'easyble' //项目名称  
-    publishVersion = "$lib_version" //版本号  
+    publishVersion = '1.1.6' //版本号  
     desc = 'A framework for Android Bluetooth Low Energy (BLE)'
     website = 'https://github.com/wandersnail'
 }
