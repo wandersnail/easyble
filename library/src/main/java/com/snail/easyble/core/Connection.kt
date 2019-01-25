@@ -378,7 +378,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     }
 
     override fun onRequestFialed(tag: String, requestType: Request.RequestType, failType: Int, value: ByteArray?) {
-        Ble.instance.postEvent(Events.newRequestFailed(device, tag, requestType, failType, value!!))
+        Ble.instance.postEvent(Events.newRequestFailed(device, tag, requestType, failType, value))
         Ble.println(javaClass, Log.DEBUG, "request failed! [addr: ${device.addr}, tag: $tag, failType: $failType]")
     }
 

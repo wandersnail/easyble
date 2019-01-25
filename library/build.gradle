@@ -9,7 +9,7 @@ android {
         minSdkVersion Integer.parseInt(MIN_SDK_VERSION)
         targetSdkVersion Integer.parseInt(TARGET_SDK_VERSION)
         versionCode 1
-        versionName '1.1.6'
+        versionName '1.1.7'
     }
 
     buildTypes {
@@ -45,7 +45,7 @@ publish {
     userOrg = 'wandersnail' //bintray.com用户名  
     groupId = 'com.github.wandersnail' //jcenter上的路径  
     artifactId = 'easyble' //项目名称  
-    publishVersion = '1.1.6' //版本号  
+    publishVersion = '1.1.7' //版本号  
     desc = 'A framework for Android Bluetooth Low Energy (BLE)'
     website = 'https://github.com/wandersnail'
 }
