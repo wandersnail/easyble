@@ -31,7 +31,7 @@ open class SimpleEventObserver : EventObserver {
     override fun onConnectFailed(device: Device?, type: Int) {}
 
     /** 
-     * @param state One of [IConnection.STATE_DISCONNECTED], [IConnection.STATE_CONNECTING],
+     * device.connectionState One of [IConnection.STATE_DISCONNECTED], [IConnection.STATE_CONNECTING],
      * [IConnection.STATE_SCANNING], [IConnection.STATE_CONNECTED], [IConnection.STATE_SERVICE_DISCOVERING],
      * [IConnection.STATE_SERVICE_DISCOVERED]
      */
