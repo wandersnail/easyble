@@ -11,10 +11,12 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
+import com.snail.easyble.annotation.InvokeThread
+import com.snail.easyble.annotation.RunOn
 import com.snail.easyble.callback.ConnectionStateChangeListener
+import com.snail.easyble.callback.EventObserver
 import com.snail.easyble.callback.ScanListener
-import com.snail.easyble.event.Events
-import org.greenrobot.eventbus.EventBus
+import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -31,8 +33,7 @@ class Ble private constructor() {
     private val connectionMap: MutableMap<String, Connection>
     private var isInited: Boolean = false
     var bleConfig = BleConfig()    
-    private val mainThreadHandler: Handler
-    private val publisher: EventBus
+    private val mainHandler: Handler
     private val logger: BleLogger
     private val executorService: ExecutorService
     private var app: Application? = null
@@ -40,11 +41,10 @@ class Ble private constructor() {
 
     init {
         connectionMap = ConcurrentHashMap()
-        mainThreadHandler = Handler(Looper.getMainLooper())        
-        publisher = EventBus.builder().build()
+        mainHandler = Handler(Looper.getMainLooper())
         logger = BleLogger()
         executorService = Executors.newCachedThreadPool()
-        mainThreadHandler.post { tryGetContext() }
+        mainHandler.post { tryGetContext() }
     }
     
     internal val context: Context?
@@ -62,7 +62,7 @@ class Ble private constructor() {
         override fun onReceive(context: Context, intent: Intent) {
             if (BluetoothAdapter.ACTION_STATE_CHANGED == intent.action) { //bluetooth state change                 
                 if (bluetoothAdapter != null) {
-                    publisher.post(Events.newBluetoothStateChanged(bluetoothAdapter!!.state))
+                    getObservable().notifyBluetoothStateChanged(bluetoothAdapter!!.state)
                     if (bluetoothAdapter!!.state == BluetoothAdapter.STATE_OFF) { //bluetooth off
                         scanner?.onBluethoothOff()
                         //disconnect all connections
@@ -148,7 +148,7 @@ class Ble private constructor() {
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
         app.registerReceiver(receiver, filter)
         isInited = true
-        scanner = Scanner(bluetoothAdapter!!, mainThreadHandler)
+        scanner = Scanner(bluetoothAdapter!!, mainHandler)
         return true
     }
 
@@ -173,6 +173,20 @@ class Ble private constructor() {
         return isInited && app != null
     }
 
+    //Callback on different threads by annotation
+    internal fun execute(method: Method?, runnable: Runnable) {
+        if (method != null) {
+            val invokeThread = method.getAnnotation(InvokeThread::class.java)
+            if (invokeThread == null || invokeThread.value === RunOn.POSTING) {
+                runnable.run()
+            } else if (invokeThread.value === RunOn.BACKGROUND) {
+                executorService.execute(runnable)
+            } else {
+                mainHandler.post(runnable)
+            }
+        }
+    }
+    
     /**
      * close all active connections and release resources
      */
@@ -180,40 +194,28 @@ class Ble private constructor() {
         if (checkInitStateAndContext()) {
             scanner?.release()
             releaseAllConnections()
+            getObservable().unregisterAll()
         }
     }
 
-    fun postEvent(event: Any) {
-        publisher.post(event)
+    internal fun getObservable(): EventObservable {
+        return bleConfig.eventObservable
     }
-
+    
     /**
-     * post event to background thread
+     * Subscribe events of bluetooth status change and receive data and requests result etc. See [unregisterObserver]
      */
-    fun postEventOnBackground(event: Any) {
-        executorService.execute(EventRunnable(event))
-    }
-
-    private inner class EventRunnable internal constructor(private val event: Any) : Runnable {
-        override fun run() {
-            publisher.post(event)
-        }
-    }
-
-    /**
-     * Subscribe events of bluetooth status change and receive data and requests result etc. See [unregisterSubscriber]
-     */
-    fun registerSubscriber(subscriber: Any) {
-        if (!publisher.isRegistered(subscriber)) {
-            publisher.register(subscriber)
+    fun registerObserver(observer: EventObserver) {
+        if (!getObservable().isRegistered(observer)) {
+            getObservable().registerObserver(observer)
         }
     }
 
     /**
-     * Unsubscribe events of bluetooth status change and receive data and requests result etc. See [registerSubscriber]
+     * Unsubscribe events of bluetooth status change and receive data and requests result etc. See [registerObserver]
      */
-    fun unregisterSubscriber(subscriber: Any) {
-        publisher.unregister(subscriber)
+    fun unregisterObserver(observer: EventObserver) {
+        getObservable().unregisterObserver(observer)
     }
 
     /**
@@ -472,8 +474,8 @@ class Ble private constructor() {
             get() = Holder.BLE
 
         fun println(cls: Class<*>, priority: Int, msg: String) {
-            Ble.instance.postEvent(Events.newLogChanged(msg, BleLogger.getLevel(priority)))
-            Ble.instance.logger.println("blelib:" + cls.simpleName, priority, msg)
+            instance.getObservable().notifyLogChanged(msg, BleLogger.getLevel(priority))
+            instance.logger.println("blelib:" + cls.simpleName, priority, msg)
         }
     }
 }

@@ -6,8 +6,8 @@ import android.os.Message
 import android.support.annotation.UiThread
 import android.util.Log
 import com.snail.easyble.callback.ConnectionStateChangeListener
-import com.snail.easyble.event.Events
 import com.snail.easyble.util.BleUtils
+import java.util.*
 
 /**
  * Used for handling connection state and auto reconnect etc.
@@ -155,18 +155,18 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
                             device.connectionState == IConnection.STATE_CONNECTING -> IConnection.TIMEOUT_TYPE_CANNOT_CONNECT
                             else -> IConnection.TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES
                         }
-                        Ble.instance.postEvent(Events.newConnectTimeout(device, type))
+                        Ble.instance.getObservable().notifyConnectTimeout(device, type)
                         stateChangeListener?.onConnectTimeout(device, type)
                         if (config.isAutoReconnect && (config.tryReconnectTimes == ConnectionConfig.TRY_RECONNECT_TIMES_INFINITE || tryReconnectTimes < config.tryReconnectTimes)) {
-                            doDisconnect(true, true)
+                            doDisconnect(true)
                         } else {
-                            doDisconnect(false, true)
+                            doDisconnect(false)
                             notifyConnectFailed(device, IConnection.CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION, stateChangeListener)
                             Ble.println(javaClass, Log.ERROR, "connect failed! [type: maximun reconnection, name: ${device.name}, addr: ${device.addr}]")
                         }
                     }
                 } else if (config.isAutoReconnect) {
-                    doDisconnect(true, true)
+                    doDisconnect(true)
                 }
             }
             connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_TIMER, 500)
@@ -231,7 +231,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         }, 500)
     }
 
-    private fun doDisconnect(reconnect: Boolean, notify: Boolean) {
+    private fun doDisconnect(reconnect: Boolean, notify: Boolean = true) {
         clearRequestQueueAndNotify()
         if (bluetoothGatt != null) {
             closeGatt(bluetoothGatt)
@@ -294,7 +294,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         if (lastConnectState != device.connectionState) {
             lastConnectState = device.connectionState
             stateChangeListener?.onConnectionStateChanged(device)
-            Ble.instance.postEvent(Events.newConnectionStateChanged(device, device.connectionState))
+            Ble.instance.getObservable().notifyConnectionStateChanged(device)
         }
     }
 
@@ -358,62 +358,61 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     }
 
     override fun onCharacteristicRead(tag: String, characteristic: BluetoothGattCharacteristic) {
-        Ble.instance.postEvent(Events.newCharacteristicRead(device, tag, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, characteristic.value)))
+        Ble.instance.getObservable().notifyCharacteristicRead(device, tag, characteristic.service.uuid, characteristic.uuid, characteristic.value)
         Ble.println(javaClass, Log.DEBUG, "(${characteristic.uuid})characteristic read! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
     }
 
     override fun onCharacteristicChanged(characteristic: BluetoothGattCharacteristic) {
-        Ble.instance.postEvent(Events.newCharacteristicChanged(device, GattCharacteristic(characteristic.service.uuid, characteristic.uuid, characteristic.value)))
+        Ble.instance.getObservable().notifyCharacteristicChanged(device, characteristic.service.uuid, characteristic.uuid, characteristic.value)
         Ble.println(javaClass, Log.INFO, "(${characteristic.uuid})characteristic change! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
     }
 
     override fun onReadRemoteRssi(tag: String, rssi: Int) {
-        Ble.instance.postEvent(Events.newRemoteRssiRead(device, tag, rssi))
+        Ble.instance.getObservable().notifyRemoteRssiRead(device, tag, rssi)
         Ble.println(javaClass, Log.DEBUG, "rssi read! [addr: ${device.addr}, rssi: $rssi]")
     }
 
     override fun onMtuChanged(tag: String, mtu: Int) {
-        Ble.instance.postEvent(Events.newMtuChanged(device, tag, mtu))
+        Ble.instance.getObservable().notifyMtuChanged(device, tag, mtu)
         Ble.println(javaClass, Log.DEBUG, "mtu change! [addr: ${device.addr}, mtu: $mtu]")
     }
 
     override fun onRequestFialed(tag: String, requestType: Request.RequestType, failType: Int, value: ByteArray?) {
-        Ble.instance.postEvent(Events.newRequestFailed(device, tag, requestType, failType, value))
+        Ble.instance.getObservable().notifyRequestFailed(device, tag, requestType, failType, value)
         Ble.println(javaClass, Log.DEBUG, "request failed! [addr: ${device.addr}, tag: $tag, failType: $failType]")
     }
 
     override fun onDescriptorRead(tag: String, descriptor: BluetoothGattDescriptor) {
         val charac = descriptor.characteristic
-        Ble.instance.postEvent(Events.newDescriptorRead(device, tag, GattDescriptor(charac.service.uuid, charac.uuid, descriptor.uuid, descriptor.value)))
+        Ble.instance.getObservable().notifyDescriptorRead(device, tag, charac.service.uuid, charac.uuid, descriptor.uuid, descriptor.value)
         Ble.println(javaClass, Log.DEBUG, "(${descriptor.characteristic.uuid})descriptor read! [addr: ${device.addr}, value: ${getHex(descriptor.value)}]")
     }
 
     override fun onNotificationChanged(tag: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean) {
         val charac = descriptor.characteristic
-        Ble.instance.postEvent(Events.newNotificationChanged(device, tag, GattDescriptor(charac.service.uuid, charac.uuid, descriptor.uuid, descriptor.value), isEnabled))
+        Ble.instance.getObservable().notifyNotificationChanged(device, tag, charac.service.uuid, charac.uuid, descriptor.uuid, isEnabled)
         Ble.println(javaClass, Log.DEBUG, "(${descriptor.characteristic.uuid})${if (isEnabled) "notification enabled!" else "notification disabled!"} [addr: ${device.addr}]")
     }
 
     override fun onIndicationChanged(tag: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean) {
         val characteristic = descriptor.characteristic
-        Ble.instance.postEvent(Events.newIndicationChanged(device, tag, GattDescriptor(characteristic.service.uuid, characteristic.uuid, descriptor.uuid, descriptor.value), isEnabled))
+        Ble.instance.getObservable().notifyIndicationChanged(device, tag, characteristic.service.uuid, characteristic.uuid, descriptor.uuid, isEnabled)
         Ble.println(javaClass, Log.DEBUG, "(${descriptor.characteristic.uuid})${if (isEnabled) "indication enabled!" else "indication disabled"} [addr: ${device.addr}]")
     }
 
-    override fun onCharacteristicWrite(tag: String, characteristic: GattCharacteristic) {
-        Ble.instance.postEvent(Events.newCharacteristicWrite(device, tag, characteristic))
-        Ble.println(javaClass, Log.DEBUG, "(${characteristic.characteristicUuid})write success! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
+    override fun onCharacteristicWrite(tag: String, serviceUuid: UUID, characteristicUuid: UUID, value: ByteArray) {
+        Ble.instance.getObservable().notifyCharacteristicWrite(device, tag, serviceUuid, characteristicUuid, value)
+        Ble.println(javaClass, Log.DEBUG, "($characteristicUuid)write success! [addr: ${device.addr}, value: ${getHex(value)}]")
     }
 
     override fun onPhyReadOrUpdate(tag: String, read: Boolean, txPhy: Int, rxPhy: Int) {
-        val event = if (read) {
+        if (read) {
             Ble.println(javaClass, Log.DEBUG, "phy read! [addr: ${device.addr}, tvPhy: $txPhy, rxPhy: $rxPhy]")
-            Events.newPhyRead(device, tag, txPhy, rxPhy)
+            Ble.instance.getObservable().notifyPhyRead(device, tag, txPhy, rxPhy)
         } else {
             Ble.println(javaClass, Log.DEBUG, "phy update! [addr: ${device.addr}, tvPhy: $txPhy, rxPhy: $rxPhy]")
-            Events.newPhyUpdate(device, tag, txPhy, rxPhy)
-        }
-        Ble.instance.postEvent(event)        
+            Ble.instance.getObservable().notifyPhyUpdate(device, tag, txPhy, rxPhy)
+        }      
     }
 
     companion object {
@@ -447,7 +446,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
 
         internal fun notifyConnectFailed(device: Device?, type: Int, listener: ConnectionStateChangeListener?) {
             listener?.onConnectFailed(device, type)
-            Ble.instance.postEvent(Events.newConnectFailed(device, type))
+            Ble.instance.getObservable().notifyConnectFailed(device, type)
         }
     }
 }

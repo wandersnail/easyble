@@ -29,7 +29,7 @@ interface IConnection {
 
     fun onIndicationChanged(tag: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean)
 
-    fun onCharacteristicWrite(tag: String, characteristic: GattCharacteristic)
+    fun onCharacteristicWrite(tag: String, serviceUuid: UUID, characteristicUuid: UUID, value: ByteArray)
         
     fun onPhyReadOrUpdate(tag: String, read: Boolean, txPhy: Int, rxPhy: Int)
 

@@ -15,7 +15,14 @@ open class BleConfig {
     /** [Device] instance creator */
     var deviceCreator: IDeviceCreator? = null
         protected set
+    var eventObservable: EventObservable = EventObservable()
+        protected set
 
+    fun setEventObservable(observable: EventObservable): BleConfig {
+        eventObservable = observable
+        return this
+    }
+    
     /**
      * Configuration of Bluetooth LE scan
      */

@@ -10,8 +10,7 @@
 ```
 dependencies {
 	...
-	implementation 'com.github.wandersnail:easyble:1.0.0'
-	implementation 'org.greenrobot:eventbus:3.1.1'
+	implementation 'com.github.wandersnail:easyble:1.1.8'
 }
 ```
 
@@ -35,8 +34,8 @@ allprojects {
 - 支持自动重连、最大重连次数限制、直接重连或搜索到设备再重连控制
 - 支持请求延时及发送延时设置
 - 支持分包大小设置、最大传输单元设置
-- 支持注册和取消通知监听，使用EventBus通知状态及数据
-- 支持回调方式，支持使用注解@InvokeThread控制回调线程。注意：EventBus和回调只能取其一！
+- 支持注册和取消通知监听
+- 支持回调方式，支持使用注解@InvokeThread控制回调线程。注意：观察者监听和回调只能取其一！
 - 支持发送设置（是否等待发送结果回调再发送下一包）
 - 支持写入模式设置
 - 支持设置连接的传输方式

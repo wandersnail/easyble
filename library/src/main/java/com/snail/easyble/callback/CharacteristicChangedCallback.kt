@@ -1,15 +1,13 @@
 package com.snail.easyble.callback
 
-import android.bluetooth.BluetoothGattCharacteristic
-
-import com.snail.easyble.annotation.InvokeThread
+import com.snail.easyble.core.Device
+import java.util.*
 
 /**
  * 
  * date: 2018/12/2 10:38
  * author: zengfansheng
  */
-interface CharacteristicChangedCallback {
-    @InvokeThread
-    fun onCharacteristicChanged(characteristic: BluetoothGattCharacteristic)
+interface CharacteristicChangedCallback {    
+    fun onCharacteristicChanged(device: Device, serviceUuid: UUID, characteristicUuid: UUID, value: ByteArray)
 }
