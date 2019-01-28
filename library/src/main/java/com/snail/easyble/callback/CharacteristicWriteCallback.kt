@@ -14,10 +14,8 @@ import java.util.*
 interface CharacteristicWriteCallback : RequestFailedCallback {
     companion object {
         internal fun getMethodInfo(device: Device, tag: String, serviceUuid: UUID, characteristicUuid: UUID, value: ByteArray): MethodInfo {
-            return MethodInfo("onCharacteristicWrite", arrayOf(
-                ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java),
-                ValueTypePair(serviceUuid, UUID::class.java), ValueTypePair(characteristicUuid, UUID::class.java), ValueTypePair(value, ByteArray::class.java)
-            ))
+            return MethodInfo("onCharacteristicWrite", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java),
+                ValueTypePair(serviceUuid, UUID::class.java), ValueTypePair(characteristicUuid, UUID::class.java), ValueTypePair(value, ByteArray::class.java)))
         }
     }
     

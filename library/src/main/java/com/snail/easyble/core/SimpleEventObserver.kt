@@ -1,10 +1,7 @@
-package com.snail.easyble.callback
+package com.snail.easyble.core
 
 import android.bluetooth.BluetoothAdapter
 import android.support.annotation.IntRange
-import com.snail.easyble.core.Device
-import com.snail.easyble.core.IConnection
-import com.snail.easyble.core.Request
 import java.util.*
 
 /**

@@ -11,12 +11,8 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
-import com.snail.easyble.annotation.InvokeThread
-import com.snail.easyble.annotation.RunOn
 import com.snail.easyble.callback.ConnectionStateChangeListener
-import com.snail.easyble.callback.EventObserver
 import com.snail.easyble.callback.ScanListener
-import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -38,12 +34,15 @@ class Ble private constructor() {
     private val executorService: ExecutorService
     private var app: Application? = null
     private var scanner: Scanner? = null
+    private var broadcastReceiver: BroadcastReceiver? = null
+    private val methodPoster: MethodPoster
 
     init {
         connectionMap = ConcurrentHashMap()
         mainHandler = Handler(Looper.getMainLooper())
         logger = BleLogger()
         executorService = Executors.newCachedThreadPool()
+        methodPoster = MethodPoster(executorService, mainHandler)
         mainHandler.post { tryGetContext() }
     }
     
@@ -58,7 +57,7 @@ class Ble private constructor() {
             return app
         }
 
-    private val receiver = object : BroadcastReceiver() {
+    private inner class MyBroadcastReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (BluetoothAdapter.ACTION_STATE_CHANGED == intent.action) { //bluetooth state change                 
                 if (bluetoothAdapter != null) {
@@ -89,6 +88,10 @@ class Ble private constructor() {
 
     val isBluetoothAdapterEnabled: Boolean
         get() = bluetoothAdapter != null && bluetoothAdapter!!.isEnabled
+
+    internal fun getObservable() = bleConfig.eventObservable
+
+    internal fun getMethodPoster() = methodPoster
 
     internal object Holder {
         internal val BLE = Ble()
@@ -144,9 +147,12 @@ class Ble private constructor() {
         }
         bluetoothAdapter = bluetoothManager.adapter
         //Register Bluetooth status change BroadcastReceiver to listen changes 
-        val filter = IntentFilter()
-        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
-        app.registerReceiver(receiver, filter)
+        if (broadcastReceiver == null) {
+            broadcastReceiver = MyBroadcastReceiver()
+            val filter = IntentFilter()
+            filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+            app.registerReceiver(broadcastReceiver, filter)
+        }
         isInited = true
         scanner = Scanner(bluetoothAdapter!!, mainHandler)
         return true
@@ -172,34 +178,20 @@ class Ble private constructor() {
         }
         return isInited && app != null
     }
-
-    //Callback on different threads by annotation
-    internal fun execute(method: Method?, runnable: Runnable) {
-        if (method != null) {
-            val invokeThread = method.getAnnotation(InvokeThread::class.java)
-            if (invokeThread == null || invokeThread.value === RunOn.POSTING) {
-                runnable.run()
-            } else if (invokeThread.value === RunOn.BACKGROUND) {
-                executorService.execute(runnable)
-            } else {
-                mainHandler.post(runnable)
-            }
-        }
-    }
     
     /**
      * close all active connections and release resources
      */
+    @Synchronized
     fun release() {
-        if (checkInitStateAndContext()) {
-            scanner?.release()
-            releaseAllConnections()
-            getObservable().unregisterAll()
+        if (broadcastReceiver != null) {
+            app?.unregisterReceiver(broadcastReceiver)
+            broadcastReceiver = null
         }
-    }
-
-    internal fun getObservable(): EventObservable {
-        return bleConfig.eventObservable
+        isInited = false
+        scanner?.release()
+        releaseAllConnections()
+        getObservable().unregisterAll()
     }
     
     /**
@@ -209,6 +201,10 @@ class Ble private constructor() {
         if (!getObservable().isRegistered(observer)) {
             getObservable().registerObserver(observer)
         }
+    }
+    
+    fun isObserverRegistered(observer: EventObserver): Boolean {
+        return getObservable().isRegistered(observer)
     }
 
     /**

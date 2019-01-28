@@ -1,7 +1,7 @@
 package com.snail.easyble.core
 
 import android.support.annotation.IntRange
-import com.snail.easyble.callback.EventObserver
+import com.snail.easyble.callback.*
 import java.util.*
 
 /**
@@ -71,26 +71,14 @@ open class EventObservable {
         }
     }
     
-    protected fun notifyAll(methodName: String, valueTypes: Array<ValueTypePair>?) {
+    protected fun notifyAll(methodName: String, valueTypePairs: Array<ValueTypePair>?) {
         getObservers().forEach {
-            if (valueTypes == null) {
-                val method = it.javaClass.getMethod(methodName)
-                Ble.instance.execute(method, Runnable {
-                    method.invoke(it)
-                })
-            } else {
-                val params = arrayOfNulls<Any>(valueTypes.size)
-                val paramTypes = arrayOfNulls<Class<*>>(valueTypes.size)
-                valueTypes.forEachIndexed { i, vt -> 
-                    params[i] = vt.value
-                    paramTypes[i] = vt.valueType
-                }
-                val method = it.javaClass.getMethod(methodName, *paramTypes)
-                Ble.instance.execute(method, Runnable {
-                    method.invoke(it, *params)
-                })
-            }
+            Ble.instance.getMethodPoster().post(it, methodName, valueTypePairs)
         }
+    }
+    
+    protected fun notifyAll(methodInfo: MethodInfo) {
+        notifyAll(methodInfo.name, methodInfo.valueTypePairs)
     }
     
     internal fun notifyBluetoothStateChanged(state: Int) {
@@ -98,18 +86,15 @@ open class EventObservable {
     }
 
     internal fun notifyCharacteristicChanged(device: Device, serviceUuid: UUID, characteristicUuid: UUID, value: ByteArray) {
-        notifyAll("onCharacteristicChanged", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(serviceUuid, UUID::class.java),
-            ValueTypePair(characteristicUuid, UUID::class.java), ValueTypePair(value, ByteArray::class.java)))
+        notifyAll(CharacteristicChangedCallback.getMethodInfo(device, serviceUuid, characteristicUuid, value))
     }
 
     internal fun notifyCharacteristicRead(device: Device, tag: String, serviceUuid: UUID, characteristicUuid: UUID, value: ByteArray) {
-        notifyAll("onCharacteristicRead", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java),
-            ValueTypePair(serviceUuid, UUID::class.java), ValueTypePair(characteristicUuid, UUID::class.java), ValueTypePair(value, ByteArray::class.java)))
+        notifyAll(CharacteristicReadCallback.getMethodInfo(device, tag, serviceUuid, characteristicUuid, value))
     }
 
     internal fun notifyCharacteristicWrite(device: Device, tag: String, serviceUuid: UUID, characteristicUuid: UUID, value: ByteArray) {
-        notifyAll("onCharacteristicWrite", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java),
-            ValueTypePair(serviceUuid, UUID::class.java), ValueTypePair(characteristicUuid, UUID::class.java), ValueTypePair(value, ByteArray::class.java)))
+        notifyAll(CharacteristicWriteCallback.getMethodInfo(device, tag, serviceUuid, characteristicUuid, value))
     }
 
     /**
@@ -137,39 +122,34 @@ open class EventObservable {
     }
 
     internal fun notifyDescriptorRead(device: Device, tag: String, serviceUuid: UUID, characteristicUuid: UUID, descriptorUuid: UUID, value: ByteArray) {
-        notifyAll("onDescriptorRead", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java), ValueTypePair(serviceUuid, UUID::class.java), 
-            ValueTypePair(characteristicUuid, UUID::class.java), ValueTypePair(descriptorUuid, UUID::class.java), ValueTypePair(value, ByteArray::class.java)))
+        notifyAll(DescriptorReadCallback.getMethodInfo(device, tag, serviceUuid, characteristicUuid, descriptorUuid, value))
     }
 
     internal fun notifyIndicationChanged(device: Device, tag: String, serviceUuid: UUID, characteristicUuid: UUID, descriptorUuid: UUID, isEnabled: Boolean) {
-        notifyAll("onIndicationChanged", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java), ValueTypePair(serviceUuid, UUID::class.java), 
-            ValueTypePair(characteristicUuid, UUID::class.java), ValueTypePair(descriptorUuid, UUID::class.java), ValueTypePair(isEnabled, Boolean::class.java)))
+        notifyAll(IndicationChangedCallback.getMethodInfo(device, tag, serviceUuid, characteristicUuid, descriptorUuid, isEnabled))
     }
 
     /**
      * @param mtu the new value of MTU
      */
     internal fun notifyMtuChanged(device: Device, tag: String, @IntRange(from = 23, to = 517) mtu: Int) {
-        notifyAll("onMtuChanged", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java), ValueTypePair(mtu, Int::class.java)))
+        notifyAll(MtuChangedCallback.getMethodInfo(device, tag, mtu))
     }
 
     internal fun notifyNotificationChanged(device: Device, tag: String, serviceUuid: UUID, characteristicUuid: UUID, descriptorUuid: UUID, isEnabled: Boolean) {
-        notifyAll("onNotificationChanged", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java), ValueTypePair(serviceUuid, UUID::class.java),
-            ValueTypePair(characteristicUuid, UUID::class.java), ValueTypePair(descriptorUuid, UUID::class.java), ValueTypePair(isEnabled, Boolean::class.java)))
+        notifyAll(NotificationChangedCallback.getMethodInfo(device, tag, serviceUuid, characteristicUuid, descriptorUuid, isEnabled))
     }
 
     internal fun notifyRemoteRssiRead(device: Device, tag: String, rssi: Int) {
-        notifyAll("onRemoteRssiRead", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java), ValueTypePair(rssi, Int::class.java)))
+        notifyAll(RemoteRssiReadCallback.getMethodInfo(device, tag, rssi))
     }
 
     internal fun notifyPhyRead(device: Device, tag: String, txPhy: Int, rxPhy: Int) {
-        notifyAll("onPhyRead", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java), 
-            ValueTypePair(txPhy, Int::class.java), ValueTypePair(rxPhy, Int::class.java)))
+        notifyAll(PhyReadCallback.getMethodInfo(device, tag, txPhy, rxPhy))
     }
 
     internal fun notifyPhyUpdate(device: Device, tag: String, txPhy: Int, rxPhy: Int) {
-        notifyAll("onPhyUpdate", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java),
-            ValueTypePair(txPhy, Int::class.java), ValueTypePair(rxPhy, Int::class.java)))
+        notifyAll(PhyUpdateCallback.getMethodInfo(device, tag, txPhy, rxPhy))
     }
 
     /**
@@ -183,8 +163,7 @@ open class EventObservable {
      * [IConnection.REQUEST_FAIL_TYPE_BLUETOOTH_ADAPTER_DISABLED] etc.
      */
     internal fun notifyRequestFailed(device: Device, tag: String, requestType: Request.RequestType, failType: Int, src: ByteArray?) {
-        notifyAll("onRequestFailed", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java), 
-            ValueTypePair(requestType, Request.RequestType::class.java), ValueTypePair(failType, Int::class.java), ValueTypePair(src, ByteArray::class.java)))
+        notifyAll(RequestFailedCallback.getMethodInfo(device, tag, requestType, failType, src))
     }
 
     internal fun notifyLogChanged(log: String, level: Int) {

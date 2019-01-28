@@ -18,7 +18,8 @@ import java.util.concurrent.ConcurrentLinkedQueue
  * author: zengfansheng
  */
 @Suppress("LeakingThis")
-abstract class BaseConnection internal constructor(val device: Device, protected var bluetoothDevice: BluetoothDevice, val config: ConnectionConfig) : BluetoothGattCallback(), IConnection {
+abstract class BaseConnection internal constructor(val device: Device, protected var bluetoothDevice: BluetoothDevice, val config: ConnectionConfig) : 
+        BluetoothGattCallback(), IConnection {
     var bluetoothGatt: BluetoothGatt? = null
         protected set
     private var requestQueue: MutableList<Request> = ArrayList()
@@ -132,12 +133,8 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                 val request = currentRequest!!
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     if (request.callback != null) {
-                        val cb = request.callback as CharacteristicReadCallback
-                        val method = cb.javaClass.getMethod("onCharacteristicRead", Device::class.java, String::class.java, UUID::class.java,
-                                UUID::class.java, ByteArray::class.java)
-                        Ble.instance.execute(method, Runnable { 
-                            cb.onCharacteristicRead(device, request.tag, characteristic.service.uuid, characteristic.uuid, characteristic.value)
-                        })
+                        Ble.instance.getMethodPoster().post(request.callback, CharacteristicReadCallback.getMethodInfo(device, request.tag, 
+                                characteristic.service.uuid, characteristic.uuid, characteristic.value))
                     } else {
                         onCharacteristicRead(request.tag, characteristic)
                     }
@@ -155,12 +152,8 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                 if (currentRequest!!.remainQueue == null || currentRequest!!.remainQueue!!.isEmpty()) {
                     val request = currentRequest!!
                     if (request.callback != null) {
-                        val cb = request.callback as CharacteristicWriteCallback
-                        val method = cb.javaClass.getMethod("onCharacteristicWrite", Device::class.java, String::class.java, UUID::class.java,
-                                UUID::class.java, ByteArray::class.java)
-                        Ble.instance.execute(method, Runnable {
-                            cb.onCharacteristicWrite(device, request.tag, characteristic.service.uuid, characteristic.uuid, request.value!!)
-                        })
+                        Ble.instance.getMethodPoster().post(request.callback, CharacteristicWriteCallback.getMethodInfo(device, request.tag, 
+                                characteristic.service.uuid, characteristic.uuid, request.value!!))
                     } else {
                         onCharacteristicWrite(request.tag, characteristic.service.uuid, characteristic.uuid, request.value!!)
                     }
@@ -190,12 +183,8 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
         onCharacteristicChanged(characteristic)
         if (characteristicChangedCallback != null) {
-            try {
-                val method = characteristicChangedCallback!!.javaClass.getMethod("onCharacteristicChanged", BluetoothGattCharacteristic::class.java)
-                Ble.instance.execute(method, Runnable { characteristicChangedCallback!!.onCharacteristicChanged(device, characteristic.service.uuid, characteristic.uuid, characteristic.value) })
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            Ble.instance.getMethodPoster().post(characteristicChangedCallback!!, CharacteristicChangedCallback.getMethodInfo(device, 
+                    characteristic.service.uuid, characteristic.uuid, characteristic.value))
         }
     }
 
@@ -205,11 +194,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     val request = currentRequest!!
                     if (request.callback != null) {
-                        val cb = request.callback as RemoteRssiReadCallback
-                        val method = cb.javaClass.getMethod("onRemoteRssiRead", Device::class.java, String::class.java, Int::class.java)
-                        Ble.instance.execute(method, Runnable {
-                            cb.onRemoteRssiRead(device, request.tag, rssi)
-                        })
+                        Ble.instance.getMethodPoster().post(request.callback, RemoteRssiReadCallback.getMethodInfo(device, request.tag, rssi))
                     } else {
                         onReadRemoteRssi(request.tag, rssi)
                     }
@@ -243,12 +228,8 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                     if (status == BluetoothGatt.GATT_SUCCESS) {
                         val request = currentRequest!!
                         if (request.callback != null) {
-                            val cb = request.callback as DescriptorReadCallback
-                            val method = cb.javaClass.getMethod("onDescriptorRead", Device::class.java, String::class.java, 
-                                    UUID::class.java, UUID::class.java, UUID::class.java, ByteArray::class.java)
-                            Ble.instance.execute(method, Runnable {
-                                cb.onDescriptorRead(device, request.tag, characteristic.service.uuid, characteristic.uuid, descriptor.uuid, descriptor.value)
-                            })
+                            Ble.instance.getMethodPoster().post(request.callback, DescriptorReadCallback.getMethodInfo(device, request.tag, 
+                                    characteristic.service.uuid, characteristic.uuid, descriptor.uuid, descriptor.value))
                         } else {
                             onDescriptorRead(request.tag, descriptor)
                         }
@@ -277,19 +258,11 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                     if (request.callback != null) {
                         val ch = descriptor.characteristic
                         if (request.type == Request.RequestType.ENABLE_NOTIFICATION || request.type == Request.RequestType.DISABLE_NOTIFICATION) {
-                            val cb = request.callback as NotificationChangedCallback
-                            val method = cb.javaClass.getMethod("onNotificationChanged", Device::class.java, String::class.java,
-                                    UUID::class.java, UUID::class.java, UUID::class.java, Boolean::class.java)
-                            Ble.instance.execute(method, Runnable {
-                                cb.onNotificationChanged(device, request.tag, ch.service.uuid, ch.uuid, descriptor.uuid, isEnabled)
-                            })
+                            Ble.instance.getMethodPoster().post(request.callback, NotificationChangedCallback.getMethodInfo(device, 
+                                    request.tag, ch.service.uuid, ch.uuid, descriptor.uuid, isEnabled))
                         } else {
-                            val cb = request.callback as IndicationChangedCallback
-                            val method = cb.javaClass.getMethod("onIndicationChanged", Device::class.java, String::class.java,
-                                    UUID::class.java, UUID::class.java, UUID::class.java, Boolean::class.java)
-                            Ble.instance.execute(method, Runnable {
-                                cb.onIndicationChanged(device, request.tag, ch.service.uuid, ch.uuid, descriptor.uuid, isEnabled)
-                            })
+                            Ble.instance.getMethodPoster().post(request.callback, IndicationChangedCallback.getMethodInfo(device,
+                                    request.tag, ch.service.uuid, ch.uuid, descriptor.uuid, isEnabled))
                         }
                     } else if (request.type == Request.RequestType.ENABLE_NOTIFICATION || request.type == Request.RequestType.DISABLE_NOTIFICATION) {
                         onNotificationChanged(request.tag, descriptor, isEnabled)
@@ -308,11 +281,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                 val request = currentRequest!!
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     if (request.callback != null) {
-                        val cb = request.callback as MtuChangedCallback
-                        val method = cb.javaClass.getMethod("onMtuChanged", Device::class.java, String::class.java, Int::class.java)
-                        Ble.instance.execute(method, Runnable {
-                            cb.onMtuChanged(device, request.tag, mtu)
-                        })
+                        Ble.instance.getMethodPoster().post(request.callback, MtuChangedCallback.getMethodInfo(device, request.tag, mtu))
                     } else {
                         onMtuChanged(request.tag, mtu)
                     }
@@ -339,17 +308,9 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     if (request.callback != null) {
                         if (read) {
-                            val cb = request.callback as PhyReadCallback
-                            val method = cb.javaClass.getMethod("onPhyRead", Device::class.java, String::class.java, Int::class.java, Int::class.java)
-                            Ble.instance.execute(method, Runnable {
-                                cb.onPhyRead(device, request.tag, txPhy, rxPhy)
-                            })
+                            Ble.instance.getMethodPoster().post(request.callback, PhyReadCallback.getMethodInfo(device, request.tag, txPhy, rxPhy))
                         } else {
-                            val cb = request.callback as PhyUpdateCallback
-                            val method = cb.javaClass.getMethod("onPhyUpdate", Device::class.java, String::class.java, Int::class.java, Int::class.java)
-                            Ble.instance.execute(method, Runnable {
-                                cb.onPhyUpdate(device, request.tag, txPhy, rxPhy)
-                            })
+                            Ble.instance.getMethodPoster().post(request.callback, PhyUpdateCallback.getMethodInfo(device, request.tag, txPhy, rxPhy))
                         }
                     } else {
                         onPhyReadOrUpdate(request.tag, read, txPhy, rxPhy)
@@ -390,9 +351,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     private fun handleFailedCallback(callback: RequestFailedCallback, device: Device, tag: String, requestType: Request.RequestType, failType: Int, src: ByteArray?) {
-        val method = callback.javaClass.getMethod("onRequestFailed", Device::class.java, String::class.java, 
-                Request.RequestType::class.java, Int::class.java, ByteArray::class.java)
-        Ble.instance.execute(method, Runnable { callback.onRequestFailed(device, tag, requestType, failType, src) })
+        Ble.instance.getMethodPoster().post(callback, RequestFailedCallback.getMethodInfo(device, tag, requestType, failType, src))
     }
 
     /**
@@ -752,12 +711,8 @@ abstract class BaseConnection internal constructor(val device: Device, protected
             }
             if (!request.waitWriteResult) {
                 if (request.callback != null) {
-                    val cb = currentRequest!!.callback as CharacteristicWriteCallback
-                    val method = cb.javaClass.getMethod("onCharacteristicWrite", Device::class.java, String::class.java, UUID::class.java,
-                            UUID::class.java, ByteArray::class.java)
-                    Ble.instance.execute(method, Runnable {
-                        cb.onCharacteristicWrite(device, request.tag, characteristic.service.uuid, characteristic.uuid, request.value!!)
-                    })
+                    Ble.instance.getMethodPoster().post(currentRequest!!.callback!!, CharacteristicWriteCallback.getMethodInfo(device, request.tag, 
+                            characteristic.service.uuid, characteristic.uuid, request.value!!))
                 } else {
                     onCharacteristicWrite(request.tag, characteristic.service.uuid, characteristic.uuid, request.value!!)
                 }

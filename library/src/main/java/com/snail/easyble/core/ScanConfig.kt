@@ -27,6 +27,8 @@ class ScanConfig {
     /** If true, the non BLE devices will not appear in search result callback */
     var isOnlyAcceptBleDevice = false
         private set
+    var rssiLimit = Int.MIN_VALUE
+        private set
 
     fun addAcceptNames(names: List<String>): ScanConfig {
         this.names.removeAll(names)
@@ -81,6 +83,11 @@ class ScanConfig {
      */
     fun setScanSettings(scanSettings: ScanSettings): ScanConfig {
         this.scanSettings = scanSettings
+        return this
+    }
+    
+    fun setRssiLimit(rssiLimit: Int): ScanConfig {
+        this.rssiLimit = rssiLimit
         return this
     }
 }

@@ -1,8 +1,6 @@
 package com.snail.easyble.callback
 
-import com.snail.easyble.core.Device
-import com.snail.easyble.core.IConnection
-import com.snail.easyble.core.Request
+import com.snail.easyble.core.*
 
 /**
  *
@@ -11,6 +9,13 @@ import com.snail.easyble.core.Request
  * author: zengfansheng
  */
 interface RequestFailedCallback {
+    companion object {
+        internal fun getMethodInfo(device: Device, tag: String, requestType: Request.RequestType, failType: Int, src: ByteArray?): MethodInfo {
+            return MethodInfo("onRequestFailed", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java),
+                    ValueTypePair(requestType, Request.RequestType::class.java), ValueTypePair(failType, Int::class.java), ValueTypePair(src, ByteArray::class.java)))
+        }
+    }
+    
     /**
      * @param failType One of [IConnection.REQUEST_FAIL_TYPE_REQUEST_FAILED],
      * [IConnection.REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC],

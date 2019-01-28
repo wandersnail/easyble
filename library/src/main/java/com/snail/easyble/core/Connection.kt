@@ -260,14 +260,11 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     private fun closeGatt(gatt: BluetoothGatt?) {
         try {
             gatt!!.disconnect()
-        } catch (ignored: Exception) {
-        }
+        } catch (ignored: Exception) {}
 
         try {
             gatt!!.close()
-        } catch (ignored: Exception) {
-        }
-
+        } catch (ignored: Exception) {}
     }
 
     private fun tryScanReconnect() {
@@ -383,20 +380,17 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     }
 
     override fun onDescriptorRead(tag: String, descriptor: BluetoothGattDescriptor) {
-        val charac = descriptor.characteristic
-        Ble.instance.getObservable().notifyDescriptorRead(device, tag, charac.service.uuid, charac.uuid, descriptor.uuid, descriptor.value)
+        Ble.instance.getObservable().notifyDescriptorRead(device, tag, descriptor.characteristic.service.uuid, descriptor.characteristic.uuid, descriptor.uuid, descriptor.value)
         Ble.println(javaClass, Log.DEBUG, "(${descriptor.characteristic.uuid})descriptor read! [addr: ${device.addr}, value: ${getHex(descriptor.value)}]")
     }
 
     override fun onNotificationChanged(tag: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean) {
-        val charac = descriptor.characteristic
-        Ble.instance.getObservable().notifyNotificationChanged(device, tag, charac.service.uuid, charac.uuid, descriptor.uuid, isEnabled)
+        Ble.instance.getObservable().notifyNotificationChanged(device, tag, descriptor.characteristic.service.uuid, descriptor.characteristic.uuid, descriptor.uuid, isEnabled)
         Ble.println(javaClass, Log.DEBUG, "(${descriptor.characteristic.uuid})${if (isEnabled) "notification enabled!" else "notification disabled!"} [addr: ${device.addr}]")
     }
 
     override fun onIndicationChanged(tag: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean) {
-        val characteristic = descriptor.characteristic
-        Ble.instance.getObservable().notifyIndicationChanged(device, tag, characteristic.service.uuid, characteristic.uuid, descriptor.uuid, isEnabled)
+        Ble.instance.getObservable().notifyIndicationChanged(device, tag, descriptor.characteristic.service.uuid, descriptor.characteristic.uuid, descriptor.uuid, isEnabled)
         Ble.println(javaClass, Log.DEBUG, "(${descriptor.characteristic.uuid})${if (isEnabled) "indication enabled!" else "indication disabled"} [addr: ${device.addr}]")
     }
 

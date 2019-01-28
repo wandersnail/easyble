@@ -1,6 +1,8 @@
 package com.snail.easyble.callback
 
 import com.snail.easyble.core.Device
+import com.snail.easyble.core.MethodInfo
+import com.snail.easyble.core.ValueTypePair
 import java.util.*
 
 /**
@@ -10,5 +12,12 @@ import java.util.*
  * author: zengfansheng
  */
 interface NotificationChangedCallback : RequestFailedCallback {
+    companion object {
+        internal fun getMethodInfo(device: Device, tag: String, serviceUuid: UUID, characteristicUuid: UUID, descriptorUuid: UUID, isEnabled: Boolean): MethodInfo {
+            return MethodInfo("onNotificationChanged", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(tag, String::class.java), ValueTypePair(serviceUuid, UUID::class.java),
+                    ValueTypePair(characteristicUuid, UUID::class.java), ValueTypePair(descriptorUuid, UUID::class.java), ValueTypePair(isEnabled, Boolean::class.java)))
+        }
+    }
+    
     fun onNotificationChanged(device: Device, tag: String, serviceUuid: UUID, characteristicUuid: UUID, descriptorUuid: UUID, isEnabled: Boolean)
 }
