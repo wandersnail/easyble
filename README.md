@@ -6,7 +6,7 @@
 [![](https://jitpack.io/v/wandersnail/easyble.svg)](https://jitpack.io/#wandersnail/easyble)
 [![Download](https://api.bintray.com/packages/wandersnail/android/easyble/images/download.svg) ](https://bintray.com/wandersnail/android/easyble/_latestVersion)
 
-## 功能
+## Features
 - Support multi-device simultaneous connection
 - Support scan connected devices
 - Support scan settings
@@ -14,6 +14,7 @@
 - Support automatic reconnection, maximum reconnection limit, direct reconnection or scan and reconnection
 - Support request delay and send delay settings
 - Support packet size setting, maximum transmission unit setting
+- ......
 
 ## Configuration
 
