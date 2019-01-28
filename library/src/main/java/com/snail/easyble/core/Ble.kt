@@ -215,7 +215,7 @@ class Ble private constructor() {
             getObservable().unregisterObserver(observer)
         }
     }
-
+    
     /**
      * Add a Bluetooth LE device scan result listener.
      */
@@ -335,7 +335,7 @@ class Ble private constructor() {
     /**
      * Disconnect all active connections
      */
-    fun disconnectAllConnection() {
+    fun disconnectAllConnections() {
         connectionMap.values.forEach { it.disconnect() }
     }
 
