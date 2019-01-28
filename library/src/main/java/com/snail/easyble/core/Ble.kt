@@ -215,7 +215,9 @@ class Ble private constructor() {
      * Unsubscribe events of bluetooth status change and receive data and requests result etc. See [registerObserver]
      */
     fun unregisterObserver(observer: EventObserver) {
-        getObservable().unregisterObserver(observer)
+        if (getObservable().isRegistered(observer)) {
+            getObservable().unregisterObserver(observer)
+        }
     }
 
     /**
