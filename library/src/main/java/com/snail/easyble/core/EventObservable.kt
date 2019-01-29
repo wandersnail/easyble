@@ -49,10 +49,9 @@ open class EventObservable {
     fun unregisterObserver(observer: EventObserver) {
         synchronized(mObservers) {
             val index = mObservers.indexOf(observer)
-            if (index == -1) {
-                throw IllegalStateException("Observer $observer was not registered.")
-            }
-            mObservers.removeAt(index)
+            if (index != -1) {
+                mObservers.removeAt(index)
+            }            
         }
     }
 

@@ -377,7 +377,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     @JvmOverloads
-    fun enableNotification(tag: String, service: UUID, characteristic: UUID, callback: Any = null, priority: Int = 0) {
+    fun enableNotification(tag: String, service: UUID, characteristic: UUID, callback: NotificationChangedCallback? = null, priority: Int = 0) {
         if (checkUuidExists(tag, Request.RequestType.ENABLE_NOTIFICATION, null, callback, service, characteristic)) {
             enqueue(Request.newEnableNotificationRequest(tag, service, characteristic, callback, priority))
         }
