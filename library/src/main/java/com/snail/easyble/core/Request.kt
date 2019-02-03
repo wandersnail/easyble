@@ -29,7 +29,8 @@ class Request private constructor(val type: RequestType, val tag: String, val se
 
         @JvmOverloads
         internal fun newChangeMtuRequest(tag: String, @IntRange(from = 23, to = 517) mtu: Int, callback: Any? = null, priority: Int): Request {
-            return Request(RequestType.CHANGE_MTU, tag, null, null, null, BleUtils.numberToBytes(false, mtu.toLong(), 4), callback, priority)
+            val value = if (mtu < 23) 23 else if (mtu > 517) 517 else mtu
+            return Request(RequestType.CHANGE_MTU, tag, null, null, null, BleUtils.numberToBytes(false, value.toLong(), 4), callback, priority)
         }
 
         @JvmOverloads
