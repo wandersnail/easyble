@@ -28,30 +28,34 @@ internal class MethodPoster(private val executorService: ExecutorService, privat
     }
 
     fun post(obj: Any, methodName: String, valueTypePairs: Array<ValueTypePair>?) {
-        if (valueTypePairs == null) {
-            val method = obj.javaClass.getMethod(methodName)
-            post(method, Runnable {
-                try {
-                    method.invoke(obj)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+        try {
+            if (valueTypePairs == null || valueTypePairs.isEmpty()) {
+                val method = obj.javaClass.getMethod(methodName)
+                post(method, Runnable {
+                    try {
+                        method.invoke(obj)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                })
+            } else {
+                val params = arrayOfNulls<Any>(valueTypePairs.size)
+                val paramTypes = arrayOfNulls<Class<*>>(valueTypePairs.size)
+                valueTypePairs.forEachIndexed { i, vt ->
+                    params[i] = vt.value
+                    paramTypes[i] = vt.valueType
                 }
-            })
-        } else {
-            val params = arrayOfNulls<Any>(valueTypePairs.size)
-            val paramTypes = arrayOfNulls<Class<*>>(valueTypePairs.size)
-            valueTypePairs.forEachIndexed { i, vt ->
-                params[i] = vt.value
-                paramTypes[i] = vt.valueType
+                val method = obj.javaClass.getMethod(methodName, *paramTypes)
+                post(method, Runnable {
+                    try {
+                        method.invoke(obj, *params)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                })
             }
-            val method = obj.javaClass.getMethod(methodName, *paramTypes)
-            post(method, Runnable {
-                try {
-                    method.invoke(obj, *params)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            })
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
