@@ -3,7 +3,7 @@ package cn.zfs.bledemo
 import android.os.Build
 import android.os.Bundle
 import android.os.Looper
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.util.Log
 import com.snail.commons.utils.ToastUtils
 import com.snail.easyble.annotation.InvokeThread

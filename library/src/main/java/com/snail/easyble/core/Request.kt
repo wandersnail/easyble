@@ -1,6 +1,6 @@
 package com.snail.easyble.core
 
-import android.support.annotation.IntRange
+import androidx.annotation.IntRange
 import com.snail.easyble.util.BleUtils
 import java.util.*
 

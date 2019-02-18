@@ -5,8 +5,8 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
-import android.support.annotation.IntRange
-import android.support.annotation.RequiresApi
+import androidx.annotation.IntRange
+import androidx.annotation.RequiresApi
 import com.snail.easyble.callback.*
 import com.snail.easyble.util.BleUtils
 import java.lang.ref.WeakReference

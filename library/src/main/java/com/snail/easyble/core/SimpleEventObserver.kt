@@ -1,7 +1,7 @@
 package com.snail.easyble.core
 
 import android.bluetooth.BluetoothAdapter
-import android.support.annotation.IntRange
+import androidx.annotation.IntRange
 import java.util.*
 
 /**

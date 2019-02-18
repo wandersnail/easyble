@@ -3,8 +3,8 @@ package com.snail.easyble.core
 import android.bluetooth.*
 import android.os.Build
 import android.os.Message
-import android.support.annotation.UiThread
 import android.util.Log
+import androidx.annotation.UiThread
 import com.snail.easyble.callback.ConnectionStateChangeListener
 import com.snail.easyble.util.BleUtils
 import java.util.*

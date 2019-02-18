@@ -1,6 +1,6 @@
 package com.snail.easyble.callback
 
-import android.support.annotation.IntRange
+import androidx.annotation.IntRange
 import com.snail.easyble.core.Device
 import com.snail.easyble.core.MethodInfo
 import com.snail.easyble.core.ValueTypePair

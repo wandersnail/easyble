@@ -24,7 +24,7 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation "com.android.support:appcompat-v7:$support_lib_version"
+    implementation "androidx.appcompat:appcompat:$appcompat_version"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'com.github.wandersnail:commons:1.0.0'
     implementation 'com.github.wandersnail:widgets:1.0.0'

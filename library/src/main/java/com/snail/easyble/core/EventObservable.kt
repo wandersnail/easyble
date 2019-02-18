@@ -1,6 +1,6 @@
 package com.snail.easyble.core
 
-import android.support.annotation.IntRange
+import androidx.annotation.IntRange
 import com.snail.easyble.callback.*
 import java.util.*
 
@@ -15,7 +15,7 @@ open class EventObservable {
      * The list of observers.  An observer can be in the list at most
      * once and will never be null.
      */
-    protected val mObservers = ArrayList<EventObserver>()
+    private val mObservers = ArrayList<EventObserver>()
 
     /**
      * Adds an observer to the list. The observer cannot be null and it must not already

@@ -92,7 +92,7 @@ object BleUtils {
     fun joinPackage(vararg src: ByteArray): ByteArray {
         var bytes = ByteArray(0)
         for (bs in src) {
-            bytes = Arrays.copyOf(bytes, bytes.size + bs.size)
+            bytes = bytes.copyOf(bytes.size + bs.size)
             System.arraycopy(bs, 0, bytes, bytes.size - bs.size, bs.size)
         }
         return bytes

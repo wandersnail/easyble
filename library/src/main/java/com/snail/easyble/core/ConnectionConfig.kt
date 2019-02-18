@@ -3,7 +3,7 @@ package com.snail.easyble.core
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGattCharacteristic
 import android.os.Build
-import android.support.annotation.RequiresApi
+import androidx.annotation.RequiresApi
 import java.util.*
 
 /**
