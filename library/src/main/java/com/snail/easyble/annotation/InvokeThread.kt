@@ -3,7 +3,7 @@ package com.snail.easyble.annotation
 import java.lang.annotation.Inherited
 
 /**
- * Markup the function will be called on which thread.
+ * 标识方法期望被调用的线程
  * 
  * date: 2018/12/11 21:18
  * author: zengfansheng

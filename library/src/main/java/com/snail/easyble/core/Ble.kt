@@ -217,21 +217,21 @@ class Ble private constructor() {
     }
     
     /**
-     * Add a Bluetooth LE device scan result listener.
+     * 添加搜索监听器
      */
     fun addScanListener(listener: ScanListener?) {
         scanner?.addScanListener(listener)
     }
 
     /**
-     * Remove a Bluetooth LE device scan result listener.
+     * 移除搜索监听器
      */
     fun removeScanListener(listener: ScanListener) {
         scanner?.removeScanListener(listener)
     }
 
     /**
-     * Start a Bluetooth LE device scan
+     * 搜索BLE设备
      */
     fun startScan() {
         if (checkInitStateAndContext()) {
@@ -244,7 +244,7 @@ class Ble private constructor() {
     }
 
     /**
-     * Stop a Bluetooth LE device scan
+     * 停止搜索
      */
     fun stopScan() {
         if (checkInitStateAndContext()) {
@@ -253,7 +253,7 @@ class Ble private constructor() {
     }
 
     /**
-     * Create a connection to connect to GATT Server hosted by this device.
+     * 建立连接
      */
     @Synchronized
     fun connect(addr: String, config: ConnectionConfig, listener: ConnectionStateChangeListener?) {
@@ -269,7 +269,7 @@ class Ble private constructor() {
     }
 
     /**
-     * Create a connection to connect to GATT Server hosted by this device.
+     * 建立连接
      */
     @Synchronized
     fun connect(device: Device, config: ConnectionConfig, listener: ConnectionStateChangeListener?) {
@@ -301,21 +301,23 @@ class Ble private constructor() {
     }
 
     /**
-     * Get an connection
+     * 获取设备的连接实例
      */
     fun getConnection(device: Device?): Connection? {
         return if (device == null) null else connectionMap[device.addr]
     }
 
     /**
-     * Get an connection
+     * 获取设备的连接实例
      */
     fun getConnection(addr: String?): Connection? {
         return if (addr == null) null else connectionMap[addr]
     }
 
     /**
-     * @return One of [IConnection.STATE_DISCONNECTED], [IConnection.STATE_CONNECTING], [IConnection.STATE_SCANNING],
+     * 获取设备连接状态
+     * 
+     * @return [IConnection.STATE_DISCONNECTED], [IConnection.STATE_CONNECTING], [IConnection.STATE_SCANNING],
      * [IConnection.STATE_CONNECTED], [IConnection.STATE_SERVICE_DISCOVERING], [IConnection.STATE_SERVICE_DISCOVERED]
      */
     fun getConnectionState(device: Device): Int {
@@ -324,7 +326,7 @@ class Ble private constructor() {
     }
 
     /**
-     * Disconnect an active connection by device
+     * 断开连接
      */
     fun disconnectConnection(device: Device?) {
         if (checkInitStateAndContext() && device != null) {
@@ -333,14 +335,14 @@ class Ble private constructor() {
     }
 
     /**
-     * Disconnect all active connections
+     * 断开所有连接
      */
     fun disconnectAllConnections() {
         connectionMap.values.forEach { it.disconnect() }
     }
 
     /**
-     * Close all connections
+     * 释放所有连接
      */
     @Synchronized
     fun releaseAllConnections() {
@@ -349,7 +351,7 @@ class Ble private constructor() {
     }
 
     /**
-     * Disconnect a connection by device
+     * 释放连接
      */
     @Synchronized
     fun releaseConnection(device: Device?) {
@@ -359,7 +361,7 @@ class Ble private constructor() {
     }
 
     /**
-     * Reconnect all connections
+     * 重连所有设备
      */
     fun reconnectAll() {
         if (checkInitStateAndContext()) {
@@ -372,7 +374,7 @@ class Ble private constructor() {
     }
 
     /**
-     * Reconnect a connection by device
+     * 重连设备
      */
     fun reconnect(device: Device?) {
         if (checkInitStateAndContext() && device != null) {
@@ -384,14 +386,14 @@ class Ble private constructor() {
     }
 
     /**
-     * Set auto reconnect flag to all connections
+     * 设置是否断线重连，作用于所有连接
      */
     fun setAutoReconnectEnable(enable: Boolean) {
         connectionMap.values.forEach { it.setAutoReconnectEnable(enable) }
     }
 
     /**
-     * Set auto reconnect flag to the connection by this device
+     * 设置是否断线重连
      */
     fun setAutoReconnectEnable(device: Device?, enable: Boolean) {
         if (device != null) {
@@ -409,9 +411,9 @@ class Ble private constructor() {
     }
 
     /**
-     * Get the bond state of Bluetooth by device address.
+     * 根据MAC地址获取设备的配对状态
      *
-     * @return One of [BluetoothDevice.BOND_NONE], [BluetoothDevice.BOND_BONDING], [BluetoothDevice.BOND_BONDED].
+     * @return [BluetoothDevice.BOND_NONE], [BluetoothDevice.BOND_BONDING], [BluetoothDevice.BOND_BONDED].
      */
     fun getBondState(addr: String): Int {
         try {
@@ -423,7 +425,7 @@ class Ble private constructor() {
     }
 
     /**
-     * Start the bonding (pairing) process with the remote device.
+     * 开始配对
      */
     fun createBond(addr: String?): Boolean {
         try {
@@ -437,7 +439,7 @@ class Ble private constructor() {
     }
 
     /**
-     * Remove bond (pairing) with the remote devices by filter 
+     * 根据过滤器，清除配对
      */
     fun clearBondDevices(filter: RemoveBondFilter?) {
         val devices = bluetoothAdapter!!.bondedDevices
@@ -453,7 +455,7 @@ class Ble private constructor() {
     }
 
     /**
-     * Remove bond (pairing) with the remote device.
+     * 解除配对
      */
     fun removeBond(addr: String) {
         try {

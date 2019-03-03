@@ -35,7 +35,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     /**
-     * Returns a list of GATT services offered by the remote device.
+     * 返回一个蓝牙服务列表，只有在执行了发现服务后，才会有
      */
     val gattServices: List<BluetoothGattService>
         get() = if (bluetoothGatt != null) {
@@ -43,7 +43,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
         } else ArrayList()
 
     /**
-     * clear request queue without callbacks or EventBus's events
+     * 清除请求队列，不触发事件
      */
     fun clearRequestQueue() {
         synchronized(this) {
@@ -53,14 +53,14 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     /**
-     * set the callback handler that will receive remote characteristic notification
+     * 设置收到特征值通知数据回调，作用于有nofity属性的特征值
      */
     fun setCharacteristicChangedCallback(characteristicChangedCallback: CharacteristicChangedCallback) {
         this.characteristicChangedCallback = characteristicChangedCallback
     }
 
     /**
-     * clear request queue by request type without callbacks or EventBus's events
+     * 将指定的请求类型从队列中移除，不触发事件
      */
     fun clearRequestQueueByType(type: Request.RequestType) {
         synchronized(this) {
@@ -78,7 +78,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     /**
-     * clear request queue by request type and call callbacks or post EventBus's evnets
+     * 清空请求队列并触发通知事件
      */
     internal fun clearRequestQueueAndNotify() {
         synchronized(this) {
@@ -355,10 +355,10 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     /**
-     * change MTU(Maximum transmission unit)
+     * 修改最大传输单元
      *
-     * @param tag Used to identify request tasks
-     * @param mtu Maximum transmission unit
+     * @param tag 用于区分请求
+     * @param mtu 最大传输单元
      */
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     @JvmOverloads
@@ -367,7 +367,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     /**
-     * Reads the requested characteristic from the associated remote device.
+     * 读取蓝牙设备的特征值，只有属性有read的才能成功
      */
     @JvmOverloads
     fun readCharacteristic(tag: String, service: UUID, characteristic: UUID, callback: CharacteristicReadCallback? = null, priority: Int = 0) {
@@ -376,6 +376,9 @@ abstract class BaseConnection internal constructor(val device: Device, protected
         }
     }
 
+    /**
+     * 开启数据通知，特征值属性中需要有notify
+     */
     @JvmOverloads
     fun enableNotification(tag: String, service: UUID, characteristic: UUID, callback: NotificationChangedCallback? = null, priority: Int = 0) {
         if (checkUuidExists(tag, Request.RequestType.ENABLE_NOTIFICATION, null, callback, service, characteristic)) {
@@ -432,7 +435,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     /**
-     * Read the RSSI for a connected remote device.
+     * 读取已连接的蓝牙设备的信号强度
      */
     @JvmOverloads
     fun readRssi(tag: String, callback: RemoteRssiReadCallback? = null, priority: Int = 0) {
@@ -465,7 +468,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
         enqueue(Request.newSetPreferredPhyRequest(tag, txPhy, rxPhy, phyOptions, callback, priority))
     }
 
-    //check whether the Service or Characteristic or Descriptore exists
+    //检查uuid是否存在
     private fun checkUuidExists(tag: String, requestType: Request.RequestType, src: ByteArray?, callback: Any?, vararg uuids: UUID): Boolean {
         return when {
             uuids.isNotEmpty() -> {
@@ -481,7 +484,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
         }
     }
 
-    //check whether the Service exists
+    //检查服务是否存在
     private fun checkServiceExists(uuid: UUID, tag: String, requestType: Request.RequestType, src: ByteArray?, callback: Any?): Boolean {
         return if (getService(uuid) == null) {
             if (callback == null) {
@@ -493,7 +496,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
         } else true
     }
 
-    //check whether the Characteristic exists
+    //检查特征值是否存在
     private fun checkCharacteristicExists(service: UUID, characteristic: UUID, tag: String, requestType: Request.RequestType,
                                           src: ByteArray?, callback: Any?): Boolean {
         return if (checkServiceExists(service, tag, requestType, src, callback)) {
@@ -508,7 +511,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
         } else false
     }
 
-    //check whether the Descriptore exists
+    //检查Descriptore是否存在
     private fun checkDescriptoreExists(service: UUID, characteristic: UUID, descriptor: UUID, tag: String, requestType: Request.RequestType,
                                        src: ByteArray?, callback: Any?): Boolean {
         return if (checkServiceExists(service, tag, requestType, src, callback) && checkCharacteristicExists(service, characteristic,
@@ -532,7 +535,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                 if (currentRequest == null) {
                     executeRequest(request)
                 } else {
-                    //Determine the location of the task in the queue based on priority
+                    //根据优化级将请求插入队列中
                     var index = -1
                     run {
                         requestQueue.forEachIndexed { i, req ->
@@ -693,7 +696,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
                             return
                         }
                     }
-                } else { //send the first package data and add the rest to the queue
+                } else { //发送第一包，剩下的加入队列
                     request.remainQueue = ConcurrentLinkedQueue()
                     request.remainQueue!!.addAll(list)
                     request.sendingBytes = request.remainQueue!!.remove()

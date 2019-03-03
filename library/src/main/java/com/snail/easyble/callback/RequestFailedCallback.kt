@@ -17,7 +17,7 @@ interface RequestFailedCallback {
     }
     
     /**
-     * @param failType One of [IConnection.REQUEST_FAIL_TYPE_REQUEST_FAILED],
+     * @param failType [IConnection.REQUEST_FAIL_TYPE_REQUEST_FAILED],
      * [IConnection.REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC],
      * [IConnection.REQUEST_FAIL_TYPE_NULL_DESCRIPTOR],
      * [IConnection.REQUEST_FAIL_TYPE_NULL_SERVICE],

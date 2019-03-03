@@ -10,33 +10,31 @@ import com.snail.easyble.core.Device
 interface ScanListener {
 
     /**
-     * Callback when scan has been started
+     * 蓝牙搜索开始
      */
     fun onScanStart()
 
     /**
-     * Callback when scan has been stoped
+     * 蓝牙搜索停止
      */
     fun onScanStop()
 
     /**
-     * Callback when a BLE advertisement has been found.
-     * 
-     * @param device BLE device
+     * 搜索到BLE设备
      */
     fun onScanResult(device: Device)
 
     /**
-     * Callback when error occurs
+     * 搜索错误
      * 
-     * @param errorCode One of [ERROR_LACK_LOCATION_PERMISSION], [ERROR_LOCATION_SERVICE_CLOSED]
+     * @param errorCode [ERROR_LACK_LOCATION_PERMISSION], [ERROR_LOCATION_SERVICE_CLOSED]
      */
     fun onScanError(errorCode: Int, errorMsg: String)
 
     companion object {
-        /** lack permission [Manifest.permission.ACCESS_COARSE_LOCATION] or [Manifest.permission.ACCESS_FINE_LOCATION] */
+        /** 缺少定位权限 [Manifest.permission.ACCESS_COARSE_LOCATION] 或者 [Manifest.permission.ACCESS_FINE_LOCATION] */
         const val ERROR_LACK_LOCATION_PERMISSION = 0
-        /** System location service is not enabled */
+        /** 系统位置服务未开启 */
         const val ERROR_LOCATION_SERVICE_CLOSED = 1
     }
 }
