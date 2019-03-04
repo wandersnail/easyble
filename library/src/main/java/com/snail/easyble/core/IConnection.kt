@@ -36,12 +36,12 @@ interface IConnection {
     companion object {
         val clientCharacteristicConfig = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")!!
 
-        /** Normal failed request  */
+        /** 普通请求失败  */
         const val REQUEST_FAIL_TYPE_REQUEST_FAILED = 0
         const val REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC = 1
         const val REQUEST_FAIL_TYPE_NULL_DESCRIPTOR = 2
         const val REQUEST_FAIL_TYPE_NULL_SERVICE = 3
-        /** status is not [BluetoothGatt.GATT_SUCCESS] */
+        /** 请求结果不是[BluetoothGatt.GATT_SUCCESS] */
         const val REQUEST_FAIL_TYPE_GATT_STATUS_FAILED = 4
         const val REQUEST_FAIL_TYPE_GATT_IS_NULL = 5
         const val REQUEST_FAIL_TYPE_API_LEVEL_TOO_LOW = 6
@@ -51,26 +51,26 @@ interface IConnection {
         const val REQUEST_FAIL_TYPE_CONNECTION_RELEASED = 10
         const val REQUEST_FAIL_TYPE_VALUE_IS_NULL_OR_EMPTY = 11
 
-        //----------ble connection state-------------  
+        //----------连接状态-------------  
         const val STATE_DISCONNECTED = 0
         const val STATE_CONNECTING = 1
         const val STATE_SCANNING = 2
-        /** Connected, not discover services yet */
+        /** 已连接，还未执行发现服务 */
         const val STATE_CONNECTED = 3
-        /** Connected and discovering services */
+        /** 已连接，正在发现服务 */
         const val STATE_SERVICE_DISCOVERING = 4
-        /** Connected and the services have been discovered */
+        /** 已连接，成功发现服务 */
         const val STATE_SERVICE_DISCOVERED = 5
-        /** the connection has been released */
+        /** 连接已释放 */
         const val STATE_RELEASED = 6
-        //----------connect timeout---------
+        //----------连接超时类型---------
         const val TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE = 0
-        /** BLE advertisement has been found, but cannot connect to the device */
+        /** 搜索到设备，但是无法连接成功 */
         const val TIMEOUT_TYPE_CANNOT_CONNECT = 1
-        /** Connect succeeded, but cannot discover any service. [BluetoothGattCallback.onServicesDiscovered] has not been called back. */
+        /** 连接成功，但是无法发现蓝牙服务，即[BluetoothGattCallback.onServicesDiscovered]不回调 */
         const val TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES = 2
 
-        //-------------connect fail type-------------------
+        //-------------连接失败类型-------------------
         const val CONNECT_FAIL_TYPE_UNSPECIFIED_ADDRESS = 1
         const val CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION = 2
         const val CONNECT_FAIL_TYPE_NON_CONNECTABLE = 3

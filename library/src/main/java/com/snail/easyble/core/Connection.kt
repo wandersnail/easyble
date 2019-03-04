@@ -10,7 +10,7 @@ import com.snail.easyble.util.BleUtils
 import java.util.*
 
 /**
- * Used for handling connection state and auto reconnect etc.
+ * 管理一个设备的连接，数据收发，重连之类的
  * 
  * date: 2018/4/11 15:29
  * author: zengfansheng
@@ -45,26 +45,26 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
             return
         }
         when (msg.what) {
-            BaseConnection.MSG_CONNECT //do connect
+            BaseConnection.MSG_CONNECT //连接
             -> if (bluetoothAdapter!!.isEnabled) {
                 doConnect()
             }
-            BaseConnection.MSG_DISCONNECT //handle disconnect
+            BaseConnection.MSG_DISCONNECT //断开
             -> doDisconnect(msg.arg1 == MSG_ARG_RECONNECT && bluetoothAdapter!!.isEnabled, true)
-            BaseConnection.MSG_REFRESH //manual refresh
+            BaseConnection.MSG_REFRESH //手动刷新
             -> doRefresh(false)
-            BaseConnection.MSG_AUTO_REFRESH //auto refresh
+            BaseConnection.MSG_AUTO_REFRESH //自动刷新
             -> doRefresh(true)
-            BaseConnection.MSG_RELEASE //destroy the connection
+            BaseConnection.MSG_RELEASE //释放连接
             -> {
-                config.setAutoReconnect(false) //stop auto reconnect
+                config.setAutoReconnect(false) //停止自动重连
                 doDisconnect(false, msg.arg1 == MSG_ARG_NOTIFY)
             }
             BaseConnection.MSG_TIMER
             -> doTimer()
-            BaseConnection.MSG_DISCOVER_SERVICES, //do discover remote services
-            BaseConnection.MSG_ON_CONNECTION_STATE_CHANGE, //GATT client has connected/disconnected to/from a remote GATT server.
-            BaseConnection.MSG_ON_SERVICES_DISCOVERED //remote services have been discovered
+            BaseConnection.MSG_DISCOVER_SERVICES, //执行发现服务
+            BaseConnection.MSG_ON_CONNECTION_STATE_CHANGE, //连接状态变化
+            BaseConnection.MSG_ON_SERVICES_DISCOVERED //服务已发现
             -> if (bluetoothAdapter!!.isEnabled) {
                 if (msg.what == BaseConnection.MSG_DISCOVER_SERVICES) {
                     doDiscoverServices()
@@ -143,7 +143,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
 
     private fun doTimer() {
         if (!isReleased) {
-            //only process that are not connected, not refreshing and not actively disconnected
+            //只处理不是已发现服务并且不在刷新也不是主动断开连接的
             if (device.connectionState != IConnection.STATE_SERVICE_DISCOVERED && !refreshing && !isActiveDisconnect) {
                 if (device.connectionState != IConnection.STATE_DISCONNECTED) {
                     //超时
@@ -173,10 +173,10 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         }
     }
 
-    //handle refresh
+    //处理刷新
     private fun doRefresh(isAuto: Boolean) {
         Ble.println(javaClass, Log.DEBUG, "refresh GATT! [name: ${device.name}, addr: ${device.addr}]")
-        connStartTime = System.currentTimeMillis() //Prevent the refresh process from automatically reconnecting
+        connStartTime = System.currentTimeMillis()
         if (bluetoothGatt != null) {
             try {
                 bluetoothGatt!!.disconnect()
@@ -213,11 +213,11 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         cancelRefreshState()
         device.connectionState = IConnection.STATE_CONNECTING
         sendConnectionCallback()
-        Ble.println(javaClass, Log.DEBUG, "connecting [name: ${device.name}, addr: ${device.addr}]")
-        //Scanning must be stopped when connecting, otherwise unexpected problems will arise.
-        Ble.instance.stopScan()
+        Ble.println(javaClass, Log.DEBUG, "connecting [name: ${device.name}, addr: ${device.addr}]")        
         connHandler.postDelayed({
             if (!isReleased) {
+                //连接之前必须先停止搜索
+                Ble.instance.stopScan()
                 bluetoothGatt = when {
                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
                         bluetoothDevice.connectGatt(Ble.instance.context, false, this@Connection, config.transport, config.phy)
@@ -273,7 +273,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
             Ble.instance.stopScan()
             connHandler.postDelayed({
                 if (!isReleased) {
-                    //Scan for devices before connecting
+                    //搜索设备，搜索到才执行连接
                     device.connectionState = IConnection.STATE_SCANNING
                     Ble.println(javaClass, Log.DEBUG, "scanning [name: ${device.name}, addr: ${device.addr}]")
                     Ble.instance.startScan()
@@ -323,7 +323,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     }
 
     /**
-     * Destroy the connection and stop timer.
+     * 销毁连接，停止定时器
      */
     override fun release() {
         super.release()
@@ -331,7 +331,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     }
 
     /**
-     * Destroy the connection and stop timer without notify.
+     * 销毁连接，停止定时器，不通过观察者
      */
     fun releaseNoEvnet() {
         super.release()
@@ -415,7 +415,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         private const val MSG_ARG_NOTIFY = 2
 
         /**
-         * Create a new connection.
+         * 创建新的连接
          */
         @Synchronized
         internal fun newInstance(bluetoothAdapter: BluetoothAdapter, device: Device, config: ConnectionConfig?, connectDelay: Long, 

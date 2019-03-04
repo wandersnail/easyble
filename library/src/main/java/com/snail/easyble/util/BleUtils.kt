@@ -126,7 +126,7 @@ object BleUtils {
     }
 
     /**
-     * Does raw bytes of scan record contain one uuid in the list
+     * Does raw bytes of scan record contains one uuid in the list
      */
     fun hasUuid(uuids: List<UUID>, advData: ByteArray?): Boolean {
         try {

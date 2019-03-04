@@ -5,24 +5,22 @@ import com.snail.easyble.callback.*
 import java.util.*
 
 /**
- *
+ * 消息发布者、被观察者
  *
  * date: 2019/1/26 10:34
  * author: zengfansheng
  */
 open class EventObservable {
     /**
-     * The list of observers.  An observer can be in the list at most
-     * once and will never be null.
+     * 注册的观察者
      */
     private val mObservers = ArrayList<EventObserver>()
 
     /**
-     * Adds an observer to the list. The observer cannot be null and it must not already
-     * be registered.
-     * @param observer the observer to register
-     * @throws IllegalArgumentException the observer is null
-     * @throws IllegalStateException the observer is already registered
+     * 将观察者添加到注册集合里
+     * 
+     * @param observer 需要注册的观察者
+     * @throws IllegalStateException 如果观察者已注册将抛此异常
      */
     fun registerObserver(observer: EventObserver) {
         synchronized(mObservers) {
@@ -33,6 +31,9 @@ open class EventObservable {
         }
     }
 
+    /**
+     * 观察者是否已注册
+     */
     fun isRegistered(observer: EventObserver): Boolean {
         synchronized(mObservers) {
             return mObservers.contains(observer)
@@ -40,11 +41,9 @@ open class EventObservable {
     } 
     
     /**
-     * Removes a previously registered observer. The observer must not be null and it
-     * must already have been registered.
-     * @param observer the observer to unregister
-     * @throws IllegalArgumentException the observer is null
-     * @throws IllegalStateException the observer is not yet registered
+     * 将观察者从注册集合里移除
+     * 
+     * @param observer 需要取消注册的观察者
      */
     fun unregisterObserver(observer: EventObserver) {
         synchronized(mObservers) {
@@ -56,7 +55,7 @@ open class EventObservable {
     }
 
     /**
-     * Remove all registered observers.
+     * 将所有观察者从注册集合中移除
      */
     fun unregisterAll() {
         synchronized(mObservers) {
@@ -97,14 +96,14 @@ open class EventObservable {
     }
 
     /**
-     * @param type Fail type. One of [IConnection.CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION], [IConnection.CONNECT_FAIL_TYPE_UNSPECIFIED_ADDRESS]
+     * @param type 连接失败类型。[IConnection.CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION], [IConnection.CONNECT_FAIL_TYPE_UNSPECIFIED_ADDRESS]
      */
     internal fun notifyConnectFailed(device: Device?, type: Int) {
         notifyAll("onConnectFailed", arrayOf(ValueTypePair(device, Device::class.java), ValueTypePair(type, Int::class.java)))
     }
 
     /**
-     * device.connectionState. One of [IConnection.STATE_DISCONNECTED], [IConnection.STATE_CONNECTING],
+     * device.connectionState 设备连接状态。[IConnection.STATE_DISCONNECTED], [IConnection.STATE_CONNECTING],
      * [IConnection.STATE_SCANNING], [IConnection.STATE_CONNECTED], [IConnection.STATE_SERVICE_DISCOVERING],
      * [IConnection.STATE_SERVICE_DISCOVERED]
      */
@@ -113,7 +112,7 @@ open class EventObservable {
     }
 
     /**
-     * @param type One of [IConnection.TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE], [IConnection.TIMEOUT_TYPE_CANNOT_CONNECT],
+     * @param type 连接超时类型。[IConnection.TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE], [IConnection.TIMEOUT_TYPE_CANNOT_CONNECT],
      * [IConnection.TIMEOUT_TYPE_CANNOT_DISCOVER_SERVICES]
      */
     internal fun notifyConnectTimeout(device: Device, type: Int) {
@@ -129,7 +128,7 @@ open class EventObservable {
     }
 
     /**
-     * @param mtu the new value of MTU
+     * @param mtu 新的MTU
      */
     internal fun notifyMtuChanged(device: Device, tag: String, @IntRange(from = 23, to = 517) mtu: Int) {
         notifyAll(MtuChangedCallback.getMethodInfo(device, tag, mtu))
@@ -152,7 +151,7 @@ open class EventObservable {
     }
 
     /**
-     * @param failType One of [IConnection.REQUEST_FAIL_TYPE_REQUEST_FAILED],
+     * @param failType 请求失败类型。 [IConnection.REQUEST_FAIL_TYPE_REQUEST_FAILED],
      * [IConnection.REQUEST_FAIL_TYPE_NULL_CHARACTERISTIC],
      * [IConnection.REQUEST_FAIL_TYPE_NULL_DESCRIPTOR],
      * [IConnection.REQUEST_FAIL_TYPE_NULL_SERVICE],

@@ -5,7 +5,7 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 /**
- * Configuration of Bluetooth LE scan
+ * 搜索配置
  * 
  * date: 2018/4/13 10:42
  * author: zengfansheng
@@ -18,24 +18,30 @@ class ScanConfig {
         private set
     var isUseBluetoothLeScanner = true
         private set
-    /** Whether add the connected [Device] that connected via system Bluetooth page to scan results */
+    /** 是否将通过系统蓝牙配对连接的设备添加到搜索结果中（有些手机无法获取到系统已连接的蓝牙设备） */
     var isAcceptSysConnectedDevice = false
         private set
-    /** See [ScanSettings] */
+    /** 搜索设置 */
     var scanSettings: ScanSettings? = null
         private set
-    /** If true, the non BLE devices will not appear in search result callback */
+    /** 是否过滤非ble设备 */
     var isOnlyAcceptBleDevice = false
         private set
     var rssiLimit = Int.MIN_VALUE
         private set
 
+    /**
+     * 设置过滤设备名称
+     */
     fun addAcceptNames(names: List<String>): ScanConfig {
         this.names.removeAll(names)
         this.names.addAll(names)
         return this
     }
 
+    /**
+     * 设置过滤设备地址
+     */
     fun addAcceptAddrs(addrs: List<String>): ScanConfig {
         addrs.forEach { 
             val addr = it.toUpperCase(Locale.ENGLISH)
@@ -46,24 +52,33 @@ class ScanConfig {
         return this
     }
 
+    /**
+     * 设置根据UUID过滤
+     */
     fun addAcceptUuid(uuids: List<UUID>): ScanConfig {
         this.uuids.removeAll(uuids)
         this.uuids.addAll(uuids)
         return this
     }
 
+    /**
+     * 设置搜索周期
+     */
     fun setScanPeriodMillis(scanPeriodMillis: Int): ScanConfig {
         this.scanPeriodMillis = scanPeriodMillis
         return this
     }
 
+    /**设置是否使用新API的蓝牙搜索器
+     * 
+     */
     fun setUseBluetoothLeScanner(useBluetoothLeScanner: Boolean): ScanConfig {
         this.isUseBluetoothLeScanner = useBluetoothLeScanner
         return this
     }
 
     /**
-     * If true, the non BLE devices will not appear in search result callback
+     * 隐藏非BLE设备
      */
     fun setHideNonBleDevice(hideNonBleDevice: Boolean): ScanConfig {
         this.isOnlyAcceptBleDevice = hideNonBleDevice
@@ -71,7 +86,7 @@ class ScanConfig {
     }
 
     /**
-     * Whether add the connected [Device] that connected via system Bluetooth page to scan results
+     * 是否将通过系统蓝牙配对连接的设备添加到搜索结果中（有些手机无法获取到系统已连接的蓝牙设备）
      */
     fun setAcceptSysConnectedDevice(acceptSysConnectedDevice: Boolean): ScanConfig {
         this.isAcceptSysConnectedDevice = acceptSysConnectedDevice
@@ -79,13 +94,16 @@ class ScanConfig {
     }
 
     /**
-     * See [ScanSettings]
+     * 搜索设置
      */
     fun setScanSettings(scanSettings: ScanSettings): ScanConfig {
         this.scanSettings = scanSettings
         return this
     }
-    
+
+    /**
+     * 设置信号强度过滤
+     */
     fun setRssiLimit(rssiLimit: Int): ScanConfig {
         this.rssiLimit = rssiLimit
         return this

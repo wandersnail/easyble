@@ -12,7 +12,7 @@ import com.snail.easyble.callback.*
 interface EventObserver : CharacteristicReadCallback, CharacteristicWriteCallback, RemoteRssiReadCallback, DescriptorReadCallback, NotificationChangedCallback, 
         IndicationChangedCallback, MtuChangedCallback, PhyReadCallback, PhyUpdateCallback, ConnectionStateChangeListener, CharacteristicChangedCallback {
     /**
-     * @param state One of [BluetoothAdapter.STATE_OFF], [BluetoothAdapter.STATE_TURNING_ON], [BluetoothAdapter.STATE_ON], [BluetoothAdapter.STATE_TURNING_OFF]
+     * @param state 蓝牙开关状态。[BluetoothAdapter.STATE_OFF], [BluetoothAdapter.STATE_TURNING_ON], [BluetoothAdapter.STATE_ON], [BluetoothAdapter.STATE_TURNING_OFF]
      */
     fun onBluetoothStateChanged(state: Int)
 

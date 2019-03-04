@@ -3,7 +3,7 @@ package com.snail.easyble.core
 import android.bluetooth.BluetoothDevice
 
 /**
- * Used to control if the bond (pairing) with the remote device needs to be cleared
+ * 清空已配对设备时的过滤器
  * 
  * date: 2018/4/17 15:43
  * author: zengfansheng

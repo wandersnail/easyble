@@ -23,7 +23,7 @@ import java.util.*
 
 
 /**
- * This class provides methods to perform scan related operations for Bluetooth LE devices
+ * 蓝牙搜索器，处理蓝牙搜索过程的事件，[Device]的实例化等
  * 
  * date: 2018/12/19 20:11
  * author: zengfansheng
@@ -36,7 +36,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     private val scanListeners = ArrayList<ScanListener>()
     private var resultCallback: (BluetoothDevice, Int, ByteArray?) -> Unit = { _, _, _ -> }
     
-    //Is the phone's location service turned on? Necessary!
+    //位置服务是否开户
     private fun isLocationEnabled(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
@@ -68,7 +68,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         scanListeners.remove(listener)
     }
 
-    //Check location permission
+    //检查是否有定位权限
     private fun noLocationPermission(context: Context): Boolean {
         return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
@@ -111,7 +111,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     private val stopScanRunnable = Runnable { stopScan() }
     
     /**
-     * Start a Bluetooth LE device scan
+     * 开始搜索
      */
     fun startScan(context: Context, resultCallback: (BluetoothDevice, Int, ByteArray?) -> Unit) {
         this.resultCallback = resultCallback
@@ -156,7 +156,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     }
     
     /**
-     * Stop a Bluetooth LE device scan
+     * 停止搜索
      */
     fun stopScan() {
         mainThreadHandler.removeCallbacks(stopScanRunnable)
@@ -192,9 +192,9 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     }
 
     /**
-     * Parse raw bytes of scan record
+     * 解析广播数据
      *
-     * @param advData Raw bytes of scan record
+     * @param advData 原始广播数据
      */
     fun parseScanResult(device: BluetoothDevice, rssi: Int, advData: ByteArray?, detailResult: ScanResult?) {
         if (getScanConfig().isOnlyAcceptBleDevice && device.type != BluetoothDevice.DEVICE_TYPE_LE) {
@@ -204,7 +204,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         val deviceName = if (TextUtils.isEmpty(device.name)) "" else device.name
         if ((getScanConfig().names.isEmpty() && getScanConfig().addrs.isEmpty() && getScanConfig().uuids.isEmpty() && getScanConfig().rssiLimit <= rssi) ||
                 getScanConfig().names.contains(device.name) || getScanConfig().addrs.contains(device.address) || BleUtils.hasUuid(getScanConfig().uuids, advData)){
-            //create a Device instance by IDeviceCreator
+            //通过构建器实例化Device
             val deviceCreater = Ble.instance.bleConfig.deviceCreator
             var dev = deviceCreater?.valueOf(device, advData)
             if (dev != null || deviceCreater == null) {

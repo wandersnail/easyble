@@ -256,13 +256,14 @@ class Ble private constructor() {
      * 建立连接
      */
     @Synchronized
-    fun connect(addr: String, config: ConnectionConfig, listener: ConnectionStateChangeListener?) {
+    fun connect(addr: String, config: ConnectionConfig, listener: ConnectionStateChangeListener?): Connection? {
         if (!checkInitStateAndContext()) {
-            return
+            return null
         }
         val device = bluetoothAdapter!!.getRemoteDevice(addr)
-        if (device == null) {
+        return if (device == null) {
             Connection.notifyConnectFailed(null, IConnection.CONNECT_FAIL_TYPE_UNSPECIFIED_ADDRESS, listener)
+            null
         } else {
             connect(Device(device), config, listener)
         }
@@ -272,9 +273,9 @@ class Ble private constructor() {
      * 建立连接
      */
     @Synchronized
-    fun connect(device: Device, config: ConnectionConfig, listener: ConnectionStateChangeListener?) {
+    fun connect(device: Device, config: ConnectionConfig, listener: ConnectionStateChangeListener?): Connection? {
         if (!checkInitStateAndContext()) {
-            return
+            return null
         }
         var connection = connectionMap.remove(device.addr)
         //if the connection exists, release it
@@ -294,10 +295,12 @@ class Ble private constructor() {
             }
             if (connection != null) {
                 connectionMap[device.addr] = connection
+                return connection
             }
         } else {
             listener?.onConnectFailed(device, IConnection.CONNECT_FAIL_TYPE_NON_CONNECTABLE)
         }
+        return null
     }
 
     /**

@@ -1,7 +1,7 @@
 package com.snail.easyble.core
 
 /**
- * Control if bond when connect to GATT Server hosted.
+ * 控制连接时是否进行配对操作
  * 
  * date: 2018/5/26 16:36
  * author: zengfansheng

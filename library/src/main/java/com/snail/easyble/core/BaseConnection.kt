@@ -53,7 +53,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     /**
-     * 设置收到特征值通知数据回调，作用于有nofity属性的特征值
+     * 设置收到特征通知数据回调，作用于有nofity属性的特征
      */
     fun setCharacteristicChangedCallback(characteristicChangedCallback: CharacteristicChangedCallback) {
         this.characteristicChangedCallback = characteristicChangedCallback
@@ -367,7 +367,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     /**
-     * 读取蓝牙设备的特征值，只有属性有read的才能成功
+     * 读取蓝牙设备的特征，只有属性有read的才能成功
      */
     @JvmOverloads
     fun readCharacteristic(tag: String, service: UUID, characteristic: UUID, callback: CharacteristicReadCallback? = null, priority: Int = 0) {
@@ -377,7 +377,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     /**
-     * 开启数据通知，特征值属性中需要有notify
+     * 开启数据通知，特征属性中需要有notify
      */
     @JvmOverloads
     fun enableNotification(tag: String, service: UUID, characteristic: UUID, callback: NotificationChangedCallback? = null, priority: Int = 0) {
@@ -496,7 +496,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
         } else true
     }
 
-    //检查特征值是否存在
+    //检查特征是否存在
     private fun checkCharacteristicExists(service: UUID, characteristic: UUID, tag: String, requestType: Request.RequestType,
                                           src: ByteArray?, callback: Any?): Boolean {
         return if (checkServiceExists(service, tag, requestType, src, callback)) {

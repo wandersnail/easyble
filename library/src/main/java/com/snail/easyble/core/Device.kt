@@ -11,10 +11,10 @@ import android.os.Parcelable
  * author: zengfansheng
  */
 open class Device constructor(val originalDevice: BluetoothDevice) : Comparable<Device>, Cloneable, Parcelable {
-    /** Raw bytes of scan record */
+    /** 原始广播数据 */
     var advData: ByteArray? = null
     var name = ""
-    /** Uniquely identifies */
+    /** 设备ID */
     var devId = ""
     var addr = originalDevice.address!!
         private set
@@ -22,7 +22,7 @@ open class Device constructor(val originalDevice: BluetoothDevice) : Comparable<
     var hardware = ""
     var battery = -1
     var rssi = -100
-    /** One of [IConnection.STATE_DISCONNECTED], [IConnection.STATE_CONNECTING],
+    /** 连接状态。[IConnection.STATE_DISCONNECTED], [IConnection.STATE_CONNECTING],
      * [IConnection.STATE_SCANNING], [IConnection.STATE_CONNECTED], [IConnection.STATE_SERVICE_DISCOVERING],
      * [IConnection.STATE_SERVICE_DISCOVERED]
      */
