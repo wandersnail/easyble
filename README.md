@@ -99,8 +99,14 @@ Ble.instance.stopScan()
 
 3. 连接
 ```
+//连接设置
+val config = ConnectionConfig()
+config.setDiscoverServicesDelayMillis(500)
+config.setAutoReconnect(autoReconnect)
+...
+
 //建立连接
-Ble.instance.connect(device!!, BleConnConfigMgr.getConnectionConfig(), object : ConnectionStateChangeListener {
+Ble.instance.connect(device!!, config, object : ConnectionStateChangeListener {
 	override fun onConnectionStateChanged(device: Device) {
 		when (device.connectionState) {
 			IConnection.STATE_SCANNING -> {
