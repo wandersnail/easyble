@@ -17,6 +17,7 @@ import android.text.TextUtils
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.snail.easyble.callback.ScanListener
+import com.snail.easyble.util.BleLogger
 import com.snail.easyble.util.BleUtils
 import java.util.*
 
@@ -120,12 +121,14 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
                 return
             }
             if (!isLocationEnabled(context)) {
-                handleScanCallback(false, null, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, 
-                        "Unable to scan for Bluetooth devices, the phone's location service is not turned on.")
+                val errorMsg = "Unable to scan for Bluetooth devices, the phone's location service is not turned on."
+                handleScanCallback(false, null, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, errorMsg)
+                BleLogger.handleLog(Log.ERROR, errorMsg)
                 return
             } else if (noLocationPermission(context)) {
-                handleScanCallback(false, null, ScanListener.ERROR_LACK_LOCATION_PERMISSION, 
-                        "Unable to scan for Bluetooth devices, lack location permission.")
+                val errorMsg = "Unable to scan for Bluetooth devices, lack location permission."
+                handleScanCallback(false, null, ScanListener.ERROR_LACK_LOCATION_PERMISSION, errorMsg)
+                BleLogger.handleLog(Log.ERROR, errorMsg)
                 return
             }
             isScanning = true
@@ -222,8 +225,8 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
                 }
                 handleScanCallback(false, dev, -1, "")
             }
-        }        
-        Ble.println(Ble::class.java, Log.DEBUG, "found device! [name: ${if (deviceName.isEmpty()) "N/A" else deviceName}, addr: ${device.address}]")
+        }
+        BleLogger.handleLog(Log.DEBUG, "found device! [name: ${if (deviceName.isEmpty()) "N/A" else deviceName}, addr: ${device.address}]")
     }
         
     fun onBluethoothOff() {

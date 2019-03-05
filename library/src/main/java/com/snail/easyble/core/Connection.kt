@@ -6,6 +6,7 @@ import android.os.Message
 import android.util.Log
 import androidx.annotation.UiThread
 import com.snail.easyble.callback.ConnectionStateChangeListener
+import com.snail.easyble.util.BleLogger
 import com.snail.easyble.util.BleUtils
 import java.util.*
 
@@ -18,11 +19,11 @@ import java.util.*
 class Connection private constructor(device: Device, bluetoothDevice: BluetoothDevice, config: ConnectionConfig) : BaseConnection(device, bluetoothDevice, config) {
 
     private var stateChangeListener: ConnectionStateChangeListener? = null
-    private var connStartTime = 0L //Used for connection timeout
-    private var refreshTimes = 0 //Refresh times. clear if the server is successfully discovered
-    private var tryReconnectTimes = 0 //Try to reconnect times
+    private var connStartTime = 0L //用于连接超时计时
+    private var refreshTimes = 0 //刷新计数，在发现服务后清零
+    private var tryReconnectTimes = 0 //尝试重连计数
     private var lastConnectState = -1 
-    private var reconnectImmediatelyCount = 0 //reconnection count without scanning
+    private var reconnectImmediatelyCount = 0 //不搜索直接重连计数
     private var refreshing = false
     private var isActiveDisconnect = false
 
@@ -88,18 +89,18 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         if (bluetoothGatt != null) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Ble.println(javaClass, Log.DEBUG, "connected! [name: ${device.name}, addr: ${device.addr}]")
+                    BleLogger.handleLog(Log.DEBUG, "connected! [name: ${device.name}, addr: ${device.addr}]")
                     device.connectionState = IConnection.STATE_CONNECTED
                     sendConnectionCallback()
                     // Discovers services after a delay
                     connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_DISCOVER_SERVICES, config.discoverServicesDelayMillis.toLong())
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    Ble.println(javaClass, Log.DEBUG, "disconnected! [name: ${device.name}, addr: ${device.addr}, autoReconnEnable: ${config.isAutoReconnect}]")
+                    BleLogger.handleLog(Log.DEBUG, "disconnected! [name: ${device.name}, addr: ${device.addr}, autoReconnEnable: ${config.isAutoReconnect}]")
                     clearRequestQueueAndNotify()
                     notifyDisconnected()
                 }
             } else {
-                Ble.println(javaClass, Log.ERROR, "GATT error! [name: ${device.name}, addr: ${device.addr}, status: $status]")
+                BleLogger.handleLog(Log.ERROR, "GATT error! [name: ${device.name}, addr: ${device.addr}, status: $status]")
                 if (status == 133) {
                     doClearTaskAndRefresh()
                 } else {
@@ -114,7 +115,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         if (bluetoothGatt != null) {
             val services = bluetoothGatt!!.services
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                Ble.println(javaClass, Log.DEBUG, "services discovered! [name: ${device.name}, addr: ${device.addr}, size: ${bluetoothGatt!!.services.size}]")
+                BleLogger.handleLog(Log.DEBUG, "services discovered! [name: ${device.name}, addr: ${device.addr}, size: ${bluetoothGatt!!.services.size}]")
                 if (services.isEmpty()) {
                     doClearTaskAndRefresh()
                 } else {
@@ -126,7 +127,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
                 }
             } else {
                 doClearTaskAndRefresh()
-                Ble.println(javaClass, Log.ERROR, "GATT error! [status: $status, name: ${device.name}, addr: ${device.addr}]")
+                BleLogger.handleLog(Log.ERROR, "GATT error! [status: $status, name: ${device.name}, addr: ${device.addr}]")
             }
         }
     }
@@ -149,7 +150,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
                     //超时
                     if (System.currentTimeMillis() - connStartTime > config.connectTimeoutMillis) {
                         connStartTime = System.currentTimeMillis()
-                        Ble.println(javaClass, Log.ERROR, "connect timeout! [name: ${device.name}, addr: ${device.addr}]")
+                        BleLogger.handleLog(Log.ERROR, "connect timeout! [name: ${device.name}, addr: ${device.addr}]")
                         val type = when {
                             device.connectionState == IConnection.STATE_SCANNING -> IConnection.TIMEOUT_TYPE_CANNOT_DISCOVER_DEVICE
                             device.connectionState == IConnection.STATE_CONNECTING -> IConnection.TIMEOUT_TYPE_CANNOT_CONNECT
@@ -162,7 +163,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
                         } else {
                             doDisconnect(false)
                             notifyConnectFailed(device, IConnection.CONNECT_FAIL_TYPE_MAXIMUM_RECONNECTION, stateChangeListener)
-                            Ble.println(javaClass, Log.ERROR, "connect failed! [type: maximun reconnection, name: ${device.name}, addr: ${device.addr}]")
+                            BleLogger.handleLog(Log.ERROR, "connect failed! [type: maximun reconnection, name: ${device.name}, addr: ${device.addr}]")
                         }
                     }
                 } else if (config.isAutoReconnect) {
@@ -175,7 +176,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
 
     //处理刷新
     private fun doRefresh(isAuto: Boolean) {
-        Ble.println(javaClass, Log.DEBUG, "refresh GATT! [name: ${device.name}, addr: ${device.addr}]")
+        BleLogger.handleLog(Log.DEBUG, "refresh GATT! [name: ${device.name}, addr: ${device.addr}]")
         connStartTime = System.currentTimeMillis()
         if (bluetoothGatt != null) {
             try {
@@ -213,7 +214,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         cancelRefreshState()
         device.connectionState = IConnection.STATE_CONNECTING
         sendConnectionCallback()
-        Ble.println(javaClass, Log.DEBUG, "connecting [name: ${device.name}, addr: ${device.addr}]")        
+        BleLogger.handleLog(Log.DEBUG, "connecting [name: ${device.name}, addr: ${device.addr}]")        
         connHandler.postDelayed({
             if (!isReleased) {
                 //连接之前必须先停止搜索
@@ -241,7 +242,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         if (isReleased) {
             device.connectionState = IConnection.STATE_RELEASED
             super.release()
-            Ble.println(javaClass, Log.DEBUG, "connection released! [name: ${device.name}, addr: ${device.addr}]")
+            BleLogger.handleLog(Log.DEBUG, "connection released! [name: ${device.name}, addr: ${device.addr}]")
         } else if (reconnect) {
             tryReconnectTimes++
             if (reconnectImmediatelyCount < config.reconnectImmediatelyTimes) {
@@ -275,7 +276,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
                 if (!isReleased) {
                     //搜索设备，搜索到才执行连接
                     device.connectionState = IConnection.STATE_SCANNING
-                    Ble.println(javaClass, Log.DEBUG, "scanning [name: ${device.name}, addr: ${device.addr}]")
+                    BleLogger.handleLog(Log.DEBUG, "scanning [name: ${device.name}, addr: ${device.addr}]")
                     Ble.instance.startScan()
                 }
             }, 2000)
@@ -356,55 +357,55 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
 
     override fun onCharacteristicRead(tag: String, characteristic: BluetoothGattCharacteristic) {
         Ble.instance.getObservable().notifyCharacteristicRead(device, tag, characteristic.service.uuid, characteristic.uuid, characteristic.value)
-        Ble.println(javaClass, Log.DEBUG, "(${characteristic.uuid})characteristic read! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
+        BleLogger.handleLog(Log.DEBUG, "(${characteristic.uuid})characteristic read! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
     }
 
     override fun onCharacteristicChanged(characteristic: BluetoothGattCharacteristic) {
         Ble.instance.getObservable().notifyCharacteristicChanged(device, characteristic.service.uuid, characteristic.uuid, characteristic.value)
-        Ble.println(javaClass, Log.INFO, "(${characteristic.uuid})characteristic change! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
+        BleLogger.handleLog(Log.INFO, "(${characteristic.uuid})characteristic change! [addr: ${device.addr}, value: ${getHex(characteristic.value)}]")
     }
 
     override fun onReadRemoteRssi(tag: String, rssi: Int) {
         Ble.instance.getObservable().notifyRemoteRssiRead(device, tag, rssi)
-        Ble.println(javaClass, Log.DEBUG, "rssi read! [addr: ${device.addr}, rssi: $rssi]")
+        BleLogger.handleLog(Log.DEBUG, "rssi read! [addr: ${device.addr}, rssi: $rssi]")
     }
 
     override fun onMtuChanged(tag: String, mtu: Int) {
         Ble.instance.getObservable().notifyMtuChanged(device, tag, mtu)
-        Ble.println(javaClass, Log.DEBUG, "mtu change! [addr: ${device.addr}, mtu: $mtu]")
+        BleLogger.handleLog(Log.DEBUG, "mtu change! [addr: ${device.addr}, mtu: $mtu]")
     }
 
     override fun onRequestFialed(tag: String, requestType: Request.RequestType, failType: Int, value: ByteArray?) {
         Ble.instance.getObservable().notifyRequestFailed(device, tag, requestType, failType, value)
-        Ble.println(javaClass, Log.DEBUG, "request failed! [addr: ${device.addr}, tag: $tag, failType: $failType]")
+        BleLogger.handleLog(Log.DEBUG, "request failed! [addr: ${device.addr}, tag: $tag, failType: $failType]")
     }
 
     override fun onDescriptorRead(tag: String, descriptor: BluetoothGattDescriptor) {
         Ble.instance.getObservable().notifyDescriptorRead(device, tag, descriptor.characteristic.service.uuid, descriptor.characteristic.uuid, descriptor.uuid, descriptor.value)
-        Ble.println(javaClass, Log.DEBUG, "(${descriptor.characteristic.uuid})descriptor read! [addr: ${device.addr}, value: ${getHex(descriptor.value)}]")
+        BleLogger.handleLog(Log.DEBUG, "(${descriptor.characteristic.uuid})descriptor read! [addr: ${device.addr}, value: ${getHex(descriptor.value)}]")
     }
 
     override fun onNotificationChanged(tag: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean) {
         Ble.instance.getObservable().notifyNotificationChanged(device, tag, descriptor.characteristic.service.uuid, descriptor.characteristic.uuid, descriptor.uuid, isEnabled)
-        Ble.println(javaClass, Log.DEBUG, "(${descriptor.characteristic.uuid})${if (isEnabled) "notification enabled!" else "notification disabled!"} [addr: ${device.addr}]")
+        BleLogger.handleLog(Log.DEBUG, "(${descriptor.characteristic.uuid})${if (isEnabled) "notification enabled!" else "notification disabled!"} [addr: ${device.addr}]")
     }
 
     override fun onIndicationChanged(tag: String, descriptor: BluetoothGattDescriptor, isEnabled: Boolean) {
         Ble.instance.getObservable().notifyIndicationChanged(device, tag, descriptor.characteristic.service.uuid, descriptor.characteristic.uuid, descriptor.uuid, isEnabled)
-        Ble.println(javaClass, Log.DEBUG, "(${descriptor.characteristic.uuid})${if (isEnabled) "indication enabled!" else "indication disabled"} [addr: ${device.addr}]")
+        BleLogger.handleLog(Log.DEBUG, "(${descriptor.characteristic.uuid})${if (isEnabled) "indication enabled!" else "indication disabled"} [addr: ${device.addr}]")
     }
 
     override fun onCharacteristicWrite(tag: String, serviceUuid: UUID, characteristicUuid: UUID, value: ByteArray) {
         Ble.instance.getObservable().notifyCharacteristicWrite(device, tag, serviceUuid, characteristicUuid, value)
-        Ble.println(javaClass, Log.DEBUG, "($characteristicUuid)write success! [addr: ${device.addr}, value: ${getHex(value)}]")
+        BleLogger.handleLog(Log.DEBUG, "($characteristicUuid)write success! [addr: ${device.addr}, value: ${getHex(value)}]")
     }
 
     override fun onPhyReadOrUpdate(tag: String, read: Boolean, txPhy: Int, rxPhy: Int) {
         if (read) {
-            Ble.println(javaClass, Log.DEBUG, "phy read! [addr: ${device.addr}, tvPhy: $txPhy, rxPhy: $rxPhy]")
+            BleLogger.handleLog(Log.DEBUG, "phy read! [addr: ${device.addr}, tvPhy: $txPhy, rxPhy: $rxPhy]")
             Ble.instance.getObservable().notifyPhyRead(device, tag, txPhy, rxPhy)
         } else {
-            Ble.println(javaClass, Log.DEBUG, "phy update! [addr: ${device.addr}, tvPhy: $txPhy, rxPhy: $rxPhy]")
+            BleLogger.handleLog(Log.DEBUG, "phy update! [addr: ${device.addr}, tvPhy: $txPhy, rxPhy: $rxPhy]")
             Ble.instance.getObservable().notifyPhyUpdate(device, tag, txPhy, rxPhy)
         }      
     }
@@ -422,7 +423,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
                                  stateChangeListener: ConnectionStateChangeListener?): Connection? {
             var connectionConfig = config
             if (!device.addr.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$".toRegex())) {
-                Ble.println(Connection::class.java, Log.ERROR, "connect failed! [type: unspecified mac address, name: ${device.name}, addr: ${device.addr}]")
+                BleLogger.handleLog(Log.ERROR, "connect failed! [type: unspecified mac address, name: ${device.name}, addr: ${device.addr}]")
                 notifyConnectFailed(device, IConnection.CONNECT_FAIL_TYPE_UNSPECIFIED_ADDRESS, stateChangeListener)
                 return null
             }
@@ -433,8 +434,8 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
             conn.bluetoothAdapter = bluetoothAdapter
             conn.stateChangeListener = stateChangeListener
             conn.connStartTime = System.currentTimeMillis()
-            conn.connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_CONNECT, connectDelay) //do connect
-            conn.connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_TIMER, connectDelay) //start timer
+            conn.connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_CONNECT, connectDelay) //执行连接
+            conn.connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_TIMER, connectDelay) //启动定时器
             return conn
         }
 

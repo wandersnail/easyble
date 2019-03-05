@@ -68,6 +68,4 @@ open class SimpleEventObserver : EventObserver {
      * [IConnection.REQUEST_FAIL_TYPE_BLUETOOTH_ADAPTER_DISABLED] etc.
      */
     override fun onRequestFailed(device: Device, tag: String, requestType: Request.RequestType, failType: Int, src: ByteArray?) {}
-
-    override fun onLogChanged(log: String, level: Int) {}
 }

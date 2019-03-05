@@ -11,14 +11,16 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import com.snail.easyble.callback.ConnectionStateChangeListener
 import com.snail.easyble.callback.ScanListener
+import com.snail.easyble.util.BleLogger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
- * The Ble is responsible for managing scanner and connections.
+ * 
  * 
  * date: 2018/4/11 15:29
  * author: zengfansheng
@@ -30,7 +32,6 @@ class Ble private constructor() {
     private var isInited: Boolean = false
     var bleConfig = BleConfig()    
     private val mainHandler: Handler
-    private val logger: BleLogger
     private val executorService: ExecutorService
     private var app: Application? = null
     private var scanner: Scanner? = null
@@ -40,7 +41,6 @@ class Ble private constructor() {
     init {
         connectionMap = ConcurrentHashMap()
         mainHandler = Handler(Looper.getMainLooper())
-        logger = BleLogger()
         executorService = Executors.newCachedThreadPool()
         methodPoster = MethodPoster(executorService, mainHandler)
         mainHandler.post { tryGetContext() }
@@ -59,19 +59,19 @@ class Ble private constructor() {
 
     private inner class MyBroadcastReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (BluetoothAdapter.ACTION_STATE_CHANGED == intent.action) { //bluetooth state change                 
+            if (BluetoothAdapter.ACTION_STATE_CHANGED == intent.action) { //蓝牙开关状态变化               
                 if (bluetoothAdapter != null) {
                     getObservable().notifyBluetoothStateChanged(bluetoothAdapter!!.state)
-                    if (bluetoothAdapter!!.state == BluetoothAdapter.STATE_OFF) { //bluetooth off
+                    if (bluetoothAdapter!!.state == BluetoothAdapter.STATE_OFF) { //蓝牙关闭
                         scanner?.onBluethoothOff()
-                        //disconnect all connections
+                        //断开所有连接
                         connectionMap.values.forEach { 
                             it.disconnect()
                         }
                     } else if (bluetoothAdapter!!.state == BluetoothAdapter.STATE_ON) {
                         connectionMap.values.forEach {
                             if (it.isAutoReconnectEnabled) {
-                                it.reconnect() //reconnect if isAutoReconnectEnabled is true
+                                it.reconnect() //重连所有设置了自动重连的连接
                             }
                         }
                     }
@@ -81,7 +81,7 @@ class Ble private constructor() {
     }
 
     /**
-     * return false if uninitialized or app == null
+     * Application不为空并且已初始化返回true
      */
     val isInitialized: Boolean
         get() = isInited && app != null
@@ -97,7 +97,7 @@ class Ble private constructor() {
         internal val BLE = Ble()
     }
 
-    //Try using reflection to get an instance of Application
+    //尝试通过反射获取Application实例
     private fun tryGetContext() {
         try {
             val clazz = Class.forName("android.app.ActivityThread")
@@ -112,23 +112,7 @@ class Ble private constructor() {
     }
 
     /**
-     * Set log output level. See [setLogPrintFilter]
-     *
-     * @param logPrintLevel One of [BleLogger.NONE], [BleLogger.VERBOSE], [BleLogger.DEBUG], [BleLogger.INFO], [BleLogger.WARN], [BleLogger.ERROR]
-     */
-    fun setLogPrintLevel(logPrintLevel: Int) {
-        logger.setPrintLevel(logPrintLevel)
-    }
-
-    /**
-     * Set the log output filter. See [setLogPrintLevel]
-     */
-    fun setLogPrintFilter(filter: BleLogger.Filter) {
-        logger.setFilter(filter)
-    }
-
-    /**
-     * Must be initialized before using the SDK
+     * 使用SDK之前，必须先初始化
      */
     @Synchronized
     fun initialize(app: Application): Boolean {
@@ -136,17 +120,17 @@ class Ble private constructor() {
             return true
         }
         this.app = app
-        //Check if the phone supports BLE
+        //检查是否支持BLE
         if (!app.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             return false
         }
-        //Get a Bluetooth adapter,
+        //获取蓝牙配置器
         val bluetoothManager = app.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
         if (bluetoothManager == null || bluetoothManager.adapter == null) {
             return false
         }
         bluetoothAdapter = bluetoothManager.adapter
-        //Register Bluetooth status change BroadcastReceiver to listen changes 
+        //注册蓝牙开关状态广播接收者
         if (broadcastReceiver == null) {
             broadcastReceiver = MyBroadcastReceiver()
             val filter = IntentFilter()
@@ -162,7 +146,9 @@ class Ble private constructor() {
     private fun checkInitStateAndContext(): Boolean {
         if (!isInited) {
             if (!tryAutoInit()) {
-                Exception("The SDK has not been initialized, make sure to call Ble.getInstance().initialize(Application) first.").printStackTrace()
+                val message = "The SDK has not been initialized, make sure to call Ble.getInstance().initialize(Application) first."
+                Exception(message).printStackTrace()
+                BleLogger.handleLog(Log.ERROR, message)
                 return false
             }
         } else if (app == null) {
@@ -180,7 +166,7 @@ class Ble private constructor() {
     }
     
     /**
-     * close all active connections and release resources
+     * 关闭所有连接并释放资源
      */
     @Synchronized
     fun release() {
@@ -195,7 +181,7 @@ class Ble private constructor() {
     }
     
     /**
-     * Subscribe events of bluetooth status change and receive data and requests result etc. See [unregisterObserver]
+     * 注册连接状态及数据接收观察者
      */
     fun registerObserver(observer: EventObserver) {
         if (!getObservable().isRegistered(observer)) {
@@ -208,7 +194,7 @@ class Ble private constructor() {
     }
 
     /**
-     * Unsubscribe events of bluetooth status change and receive data and requests result etc. See [registerObserver]
+     * 取消注册连接状态及数据接收观察者
      */
     fun unregisterObserver(observer: EventObserver) {
         if (getObservable().isRegistered(observer)) {
@@ -278,7 +264,7 @@ class Ble private constructor() {
             return null
         }
         var connection = connectionMap.remove(device.addr)
-        //if the connection exists, release it
+        //如果连接已存在，先释放掉
         connection?.releaseNoEvnet()
         if (device.isConnectable == null || device.isConnectable!!) {
             val bondController = bleConfig.bondController
@@ -472,13 +458,7 @@ class Ble private constructor() {
     }
 
     companion object {
-
         val instance: Ble
             get() = Holder.BLE
-
-        fun println(cls: Class<*>, priority: Int, msg: String) {
-            instance.getObservable().notifyLogChanged(msg, BleLogger.getLevel(priority))
-            instance.logger.println("blelib:" + cls.simpleName, priority, msg)
-        }
     }
 }

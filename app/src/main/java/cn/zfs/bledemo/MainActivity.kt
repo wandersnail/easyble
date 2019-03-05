@@ -17,12 +17,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.snail.commons.base.BaseHolder
 import com.snail.commons.base.BaseListAdapter
-import com.snail.commons.entity.PermissionsRequester
+import com.snail.commons.helper.PermissionsRequester
 import com.snail.commons.utils.PreferencesUtils
 import com.snail.easyble.callback.ScanListener
 import com.snail.easyble.core.Ble
 import com.snail.easyble.core.Device
 import com.snail.easyble.core.ScanConfig
+import com.snail.easyble.util.BleLogger
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlin.system.exitProcess
 
@@ -67,17 +68,17 @@ class MainActivity : AppCompatActivity() {
     private fun initialize() {
         //动态申请权限
         permissionsRequester = PermissionsRequester(this)
-        permissionsRequester?.setOnRequestResultListener { 
-            if (it.isEmpty()) {
+        permissionsRequester?.setOnRequestResultListener(object : PermissionsRequester.OnRequestResultListener {
+            override fun onRequestResult(refusedPermissions: MutableList<String>) {
                 
             }
-        }
-        permissionsRequester?.check(getNeedPermissions())
+        })
+        permissionsRequester?.checkAndRequest(getNeedPermissions())
     }
 
     //需要进行检测的权限
-    private fun getNeedPermissions(): List<String> {
-        val list = java.util.ArrayList<String>()
+    private fun getNeedPermissions(): MutableList<String> {
+        val list = ArrayList<String>()
         list.add(Manifest.permission.ACCESS_FINE_LOCATION)
         list.add(Manifest.permission.ACCESS_COARSE_LOCATION)
         return list
@@ -102,7 +103,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        Ble.println(javaClass, Log.DEBUG, "onResume")
+        BleLogger.handleLog(Log.DEBUG, "onResume")
         if (Ble.instance.isInitialized) {
             if (Ble.instance.isBluetoothAdapterEnabled) {
                 doStartScan()
@@ -179,7 +180,7 @@ class MainActivity : AppCompatActivity() {
         listAdapter?.clear()
         layoutEmpty.visibility = View.VISIBLE
         Ble.instance.startScan()
-        Ble.println(javaClass, Log.DEBUG, "doStartScan")
+        BleLogger.handleLog(Log.DEBUG, "doStartScan")
     }
 
     private val scanListener = object : ScanListener {

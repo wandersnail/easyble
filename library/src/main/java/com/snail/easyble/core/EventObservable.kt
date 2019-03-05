@@ -163,8 +163,4 @@ open class EventObservable {
     internal fun notifyRequestFailed(device: Device, tag: String, requestType: Request.RequestType, failType: Int, src: ByteArray?) {
         notifyAll(RequestFailedCallback.getMethodInfo(device, tag, requestType, failType, src))
     }
-
-    internal fun notifyLogChanged(log: String, level: Int) {
-        notifyAll("onLogChanged", arrayOf(ValueTypePair(log, String::class.java), ValueTypePair(level, Int::class.java)))
-    }
 }

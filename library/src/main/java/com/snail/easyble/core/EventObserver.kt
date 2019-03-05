@@ -15,6 +15,4 @@ interface EventObserver : CharacteristicReadCallback, CharacteristicWriteCallbac
      * @param state 蓝牙开关状态。[BluetoothAdapter.STATE_OFF], [BluetoothAdapter.STATE_TURNING_ON], [BluetoothAdapter.STATE_ON], [BluetoothAdapter.STATE_TURNING_OFF]
      */
     fun onBluetoothStateChanged(state: Int)
-
-    fun onLogChanged(log: String, level: Int)
 }

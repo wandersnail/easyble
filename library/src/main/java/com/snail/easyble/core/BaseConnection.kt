@@ -785,7 +785,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
         characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
         val result = bluetoothGatt!!.writeDescriptor(descriptor)
         if (!enable) {
-            //restore the original value
+            //还原原始值
             descriptor.value = oriaValue
         }
         characteristic.writeType = writeType

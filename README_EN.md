@@ -41,7 +41,20 @@ allprojects {
 
 1. Initialize the SDK
 ```
-Ble.instance.initialize(application)//it is recommended to initialize in the Application
+Ble.instance.initialize(application)//It is recommended to initialize in the Application
+BleLogger.logEnabled = true//Only control log printing, do not control log callback 
+BleLogger.logCallback = object : LogCallback {
+	override fun onLog(priority: Int, log: String) {
+		when (priority) {
+			Log.VERBOSE -> TODO()
+			Log.INFO -> TODO()
+			Log.DEBUG -> TODO()
+			Log.WARN -> TODO()
+			Log.ERROR -> TODO()
+			Log.ASSERT -> TODO()
+		}
+	}
+}
 ```
 
 2. Scan bluetooth devices

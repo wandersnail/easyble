@@ -48,6 +48,19 @@ allprojects {
 1. 初始化SDK
 ```
 Ble.instance.initialize(application)//在Application中初始化
+BleLogger.logEnabled = true//只控制打印，不控制回调
+BleLogger.logCallback = object : LogCallback {
+	override fun onLog(priority: Int, log: String) {
+		when (priority) {
+			Log.VERBOSE -> TODO()
+			Log.INFO -> TODO()
+			Log.DEBUG -> TODO()
+			Log.WARN -> TODO()
+			Log.ERROR -> TODO()
+			Log.ASSERT -> TODO()
+		}
+	}
+}
 ```
 
 2. 蓝牙搜索
