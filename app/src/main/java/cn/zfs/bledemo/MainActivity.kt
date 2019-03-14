@@ -15,8 +15,6 @@ import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.snail.commons.base.BaseHolder
-import com.snail.commons.base.BaseListAdapter
 import com.snail.commons.helper.PermissionsRequester
 import com.snail.commons.utils.PreferencesUtils
 import com.snail.easyble.callback.ScanListener
@@ -24,6 +22,8 @@ import com.snail.easyble.core.Ble
 import com.snail.easyble.core.Device
 import com.snail.easyble.core.ScanConfig
 import com.snail.easyble.util.BleLogger
+import com.snail.widget.listview.BaseListAdapter
+import com.snail.widget.listview.BaseViewHolder
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlin.system.exitProcess
 
@@ -124,13 +124,13 @@ class MainActivity : AppCompatActivity() {
         private val updateTimeMap = HashMap<String, Long>()
         private val rssiViews = HashMap<String, TextView>()
         
-        override fun getHolder(position: Int): BaseHolder<Device> {
-            return object : BaseHolder<Device>() {
+        override fun createViewHolder(position: Int): BaseViewHolder<Device> {
+            return object : BaseViewHolder<Device>() {
                 var tvName: TextView? = null
                 var tvAddr: TextView? = null
                 var tvRssi: TextView? = null
                 
-                override fun createConvertView(): View {
+                override fun createView(): View {
                     val view = View.inflate(context, R.layout.item_scan, null)
                     tvName = view.findViewById(R.id.tvName)
                     tvAddr = view.findViewById(R.id.tvAddr)
@@ -138,25 +138,25 @@ class MainActivity : AppCompatActivity() {
                     return view
                 }
 
-                override fun setData(data: Device, position: Int) {
-                    rssiViews[data.addr] = tvRssi!!
-                    tvName?.text = data.name
-                    tvAddr?.text = data.addr
-                    tvRssi?.text = data.rssi.toString()
+                override fun onBind(item: Device, position: Int) {
+                    rssiViews[item.addr] = tvRssi!!
+                    tvName?.text = item.name
+                    tvAddr?.text = item.addr
+                    tvRssi?.text = item.rssi.toString()
                 }
             }
         }
 
         fun clear() {
-            data.clear()
+            items.clear()
             notifyDataSetChanged()
         }
         
         fun add(device: Device) {
-            val dev = data.firstOrNull { it.addr == device.addr }
+            val dev = items.firstOrNull { it.addr == device.addr }
             if (dev == null) {
                 updateTimeMap[device.addr] = System.currentTimeMillis()
-                data.add(device)
+                items.add(device)
                 notifyDataSetChanged()
             } else {
                 val time = updateTimeMap[device.addr]

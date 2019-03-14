@@ -6,10 +6,10 @@ apply plugin: 'com.novoda.bintray-release'
 def lib_version = '1.2.1'
 
 android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdkVersion build_versions.target_sdk
     defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion build_versions.min_sdk
+        targetSdkVersion build_versions.target_sdk
         versionCode 1
         versionName "$lib_version"
     }
@@ -26,9 +26,9 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    compileOnly "androidx.appcompat:appcompat:$appcompat_version"
-    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compileOnly fileTree(dir: 'libs', include: ['*.jar'])
+    compileOnly deps.appcompat
+    compileOnly deps.kotlin.stdlib
 }
 
 // 打包源码

@@ -3,10 +3,10 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
 android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdkVersion build_versions.target_sdk
     defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion build_versions.min_sdk
+        targetSdkVersion build_versions.target_sdk
         applicationId "cn.zfs.bledemo"
         versionCode 7
         versionName "1.6"
@@ -27,9 +27,9 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation "androidx.appcompat:appcompat:$appcompat_version"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'com.github.wandersnail:commons:1.2.0'
-    implementation 'com.github.wandersnail:widgets:1.1.0'
+    implementation deps.appcompat
+    implementation deps.kotlin.stdlib
+    implementation deps.wandersnail.commons
+    implementation deps.wandersnail.widgets
     implementation project(':library')
 }
