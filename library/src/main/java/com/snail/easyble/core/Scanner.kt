@@ -200,7 +200,8 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
      * @param advData 原始广播数据
      */
     fun parseScanResult(device: BluetoothDevice, rssi: Int, advData: ByteArray?, detailResult: ScanResult?) {
-        if (getScanConfig().isOnlyAcceptBleDevice && device.type != BluetoothDevice.DEVICE_TYPE_LE) {
+        if ((getScanConfig().isOnlyAcceptBleDevice && device.type != BluetoothDevice.DEVICE_TYPE_LE) ||
+            !device.address.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$".toRegex())) {
             return
         }
         resultCallback(device, rssi, advData)
