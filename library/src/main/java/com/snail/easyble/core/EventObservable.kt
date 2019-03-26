@@ -2,6 +2,7 @@ package com.snail.easyble.core
 
 import androidx.annotation.IntRange
 import com.snail.easyble.callback.*
+import java.lang.ref.WeakReference
 import java.util.*
 
 /**
@@ -14,7 +15,7 @@ open class EventObservable {
     /**
      * 注册的观察者
      */
-    private val mObservers = ArrayList<EventObserver>()
+    private val observers = ArrayList<WeakReference<EventObserver>>()
 
     /**
      * 将观察者添加到注册集合里
@@ -23,11 +24,13 @@ open class EventObservable {
      * @throws IllegalStateException 如果观察者已注册将抛此异常
      */
     fun registerObserver(observer: EventObserver) {
-        synchronized(mObservers) {
-            if (mObservers.contains(observer)) {
-                throw IllegalStateException("Observer $observer is already registered.")
+        synchronized(observers) {
+            observers.forEach { 
+                if (it.get() == observer) {
+                    throw IllegalStateException("Observer $observer is already registered.")
+                }
             }
-            mObservers.add(observer)
+            observers.add(WeakReference(observer))
         }
     }
 
@@ -35,8 +38,13 @@ open class EventObservable {
      * 观察者是否已注册
      */
     fun isRegistered(observer: EventObserver): Boolean {
-        synchronized(mObservers) {
-            return mObservers.contains(observer)
+        synchronized(observers) {
+            observers.forEach {
+                if (it.get() == observer) {
+                    return true
+                }
+            }
+            return false
         }
     } 
     
@@ -46,11 +54,14 @@ open class EventObservable {
      * @param observer 需要取消注册的观察者
      */
     fun unregisterObserver(observer: EventObserver) {
-        synchronized(mObservers) {
-            val index = mObservers.indexOf(observer)
-            if (index != -1) {
-                mObservers.removeAt(index)
-            }            
+        synchronized(observers) {
+            val iterator = observers.iterator()
+            while (iterator.hasNext()) {
+                if (iterator.next().get() == observer) {
+                    iterator.remove()
+                    return
+                }
+            }
         }
     }
 
@@ -58,14 +69,24 @@ open class EventObservable {
      * 将所有观察者从注册集合中移除
      */
     fun unregisterAll() {
-        synchronized(mObservers) {
-            mObservers.clear()
+        synchronized(observers) {
+            observers.clear()
         }
     }
     
     private fun getObservers(): Array<EventObserver> {
-        synchronized(mObservers) {
-            return mObservers.toTypedArray()
+        synchronized(observers) {
+            val obs = ArrayList<EventObserver>()
+            val iterator = observers.iterator()
+            while (iterator.hasNext()) {
+                val observer = iterator.next().get()
+                if (observer == null) {
+                    iterator.remove()
+                } else {
+                    obs.add(observer)
+                }
+            }
+            return obs.toTypedArray()
         }
     }
     
