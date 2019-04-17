@@ -318,7 +318,7 @@ class Ble private constructor() {
      * 断开连接
      */
     fun disconnectConnection(device: Device?) {
-        if (checkInitStateAndContext() && device != null) {
+        if (device != null) {
             connectionMap[device.addr]?.disconnect()
         }
     }
@@ -344,7 +344,7 @@ class Ble private constructor() {
      */
     @Synchronized
     fun releaseConnection(device: Device?) {
-        if (checkInitStateAndContext() && device != null) {
+        if (device != null) {
             connectionMap.remove(device.addr)?.release()
         }
     }
