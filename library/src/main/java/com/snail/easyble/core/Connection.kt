@@ -36,41 +36,41 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     @Synchronized
     internal fun onScanResult(addr: String) {
         if (!isReleased && device.addr == addr && device.connectionState == IConnection.STATE_SCANNING) {
-            connHandler.sendEmptyMessage(BaseConnection.MSG_CONNECT)
+            connHandler.sendEmptyMessage(MSG_CONNECT)
         }
     }
 
     @UiThread
     override fun handleMsg(msg: Message) {
-        if (isReleased && msg.what != BaseConnection.MSG_RELEASE) {
+        if (isReleased && msg.what != MSG_RELEASE) {
             return
         }
         when (msg.what) {
-            BaseConnection.MSG_CONNECT //连接
+            MSG_CONNECT //连接
             -> if (bluetoothAdapter!!.isEnabled) {
                 doConnect()
             }
-            BaseConnection.MSG_DISCONNECT //断开
+            MSG_DISCONNECT //断开
             -> doDisconnect(msg.arg1 == MSG_ARG_RECONNECT && bluetoothAdapter!!.isEnabled, true)
-            BaseConnection.MSG_REFRESH //手动刷新
+            MSG_REFRESH //手动刷新
             -> doRefresh(false)
-            BaseConnection.MSG_AUTO_REFRESH //自动刷新
+            MSG_AUTO_REFRESH //自动刷新
             -> doRefresh(true)
-            BaseConnection.MSG_RELEASE //释放连接
+            MSG_RELEASE //释放连接
             -> {
                 config.setAutoReconnect(false) //停止自动重连
                 doDisconnect(false, msg.arg1 == MSG_ARG_NOTIFY)
             }
-            BaseConnection.MSG_TIMER
+            MSG_TIMER
             -> doTimer()
-            BaseConnection.MSG_DISCOVER_SERVICES, //执行发现服务
-            BaseConnection.MSG_ON_CONNECTION_STATE_CHANGE, //连接状态变化
-            BaseConnection.MSG_ON_SERVICES_DISCOVERED //服务已发现
+            MSG_DISCOVER_SERVICES, //执行发现服务
+            MSG_ON_CONNECTION_STATE_CHANGE, //连接状态变化
+            MSG_ON_SERVICES_DISCOVERED //服务已发现
             -> if (bluetoothAdapter!!.isEnabled) {
-                if (msg.what == BaseConnection.MSG_DISCOVER_SERVICES) {
+                if (msg.what == MSG_DISCOVER_SERVICES) {
                     doDiscoverServices()
                 } else {
-                    if (msg.what == BaseConnection.MSG_ON_SERVICES_DISCOVERED) {
+                    if (msg.what == MSG_ON_SERVICES_DISCOVERED) {
                         doOnServicesDiscovered(msg.arg1)
                     } else {
                         doOnConnectionStateChange(msg.arg1, msg.arg2)
@@ -93,7 +93,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
                     device.connectionState = IConnection.STATE_CONNECTED
                     sendConnectionCallback()
                     // Discovers services after a delay
-                    connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_DISCOVER_SERVICES, config.discoverServicesDelayMillis.toLong())
+                    connHandler.sendEmptyMessageDelayed(MSG_DISCOVER_SERVICES, config.discoverServicesDelayMillis.toLong())
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     BleLogger.handleLog(Log.DEBUG, "disconnected! [name: ${device.name}, addr: ${device.addr}, autoReconnEnable: ${config.isAutoReconnect}]")
                     clearRequestQueueAndNotify()
@@ -170,7 +170,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
                     doDisconnect(true)
                 }
             }
-            connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_TIMER, 500)
+            connHandler.sendEmptyMessageDelayed(MSG_TIMER, 500)
         }
     }
 
@@ -185,11 +185,11 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
 
             if (isAuto) {
                 if (refreshTimes <= 5) {
-                    refreshing = BaseConnection.refresh(bluetoothGatt!!)
+                    refreshing = refresh(bluetoothGatt!!)
                 }
                 refreshTimes++
             } else {
-                refreshing = BaseConnection.refresh(bluetoothGatt!!)
+                refreshing = refresh(bluetoothGatt!!)
             }
             if (refreshing) {
                 connHandler.postDelayed({ cancelRefreshState() }, 2000)
@@ -305,14 +305,14 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
             isActiveDisconnect = false
             tryReconnectTimes = 0
             reconnectImmediatelyCount = 0
-            Message.obtain(connHandler, BaseConnection.MSG_DISCONNECT, MSG_ARG_RECONNECT, 0).sendToTarget()
+            Message.obtain(connHandler, MSG_DISCONNECT, MSG_ARG_RECONNECT, 0).sendToTarget()
         }
     }
 
     fun disconnect() {
         if (!isReleased) {
             isActiveDisconnect = true
-            Message.obtain(connHandler, BaseConnection.MSG_DISCONNECT, MSG_ARG_NONE, 0).sendToTarget()
+            Message.obtain(connHandler, MSG_DISCONNECT, MSG_ARG_NONE, 0).sendToTarget()
         }
     }
 
@@ -320,7 +320,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
      * Clears the internal cache and forces a refresh of the services from the remote device.
      */
     fun refresh() {
-        connHandler.sendEmptyMessage(BaseConnection.MSG_REFRESH)
+        connHandler.sendEmptyMessage(MSG_REFRESH)
     }
 
     /**
@@ -328,7 +328,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
      */
     override fun release() {
         super.release()
-        Message.obtain(connHandler, BaseConnection.MSG_RELEASE, MSG_ARG_NOTIFY, 0).sendToTarget()
+        Message.obtain(connHandler, MSG_RELEASE, MSG_ARG_NOTIFY, 0).sendToTarget()
     }
 
     /**
@@ -336,18 +336,18 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
      */
     fun releaseNoEvnet() {
         super.release()
-        Message.obtain(connHandler, BaseConnection.MSG_RELEASE, MSG_ARG_NONE, 0).sendToTarget()
+        Message.obtain(connHandler, MSG_RELEASE, MSG_ARG_NONE, 0).sendToTarget()
     }
 
     override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
         if (!isReleased) {
-            connHandler.sendMessage(Message.obtain(connHandler, BaseConnection.MSG_ON_CONNECTION_STATE_CHANGE, status, newState))
+            connHandler.sendMessage(Message.obtain(connHandler, MSG_ON_CONNECTION_STATE_CHANGE, status, newState))
         }
     }
 
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
         if (!isReleased) {
-            connHandler.sendMessage(Message.obtain(connHandler, BaseConnection.MSG_ON_SERVICES_DISCOVERED, status, 0))
+            connHandler.sendMessage(Message.obtain(connHandler, MSG_ON_SERVICES_DISCOVERED, status, 0))
         }
     }
 
@@ -434,8 +434,8 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
             conn.bluetoothAdapter = bluetoothAdapter
             conn.stateChangeListener = stateChangeListener
             conn.connStartTime = System.currentTimeMillis()
-            conn.connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_CONNECT, connectDelay) //执行连接
-            conn.connHandler.sendEmptyMessageDelayed(BaseConnection.MSG_TIMER, connectDelay) //启动定时器
+            conn.connHandler.sendEmptyMessageDelayed(MSG_CONNECT, connectDelay) //执行连接
+            conn.connHandler.sendEmptyMessageDelayed(MSG_TIMER, connectDelay) //启动定时器
             return conn
         }
 
