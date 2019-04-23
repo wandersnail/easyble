@@ -161,7 +161,8 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     /**
      * 停止搜索
      */
-    fun stopScan() {
+    @JvmOverloads
+    fun stopScan(quietly: Boolean = false) {
         mainThreadHandler.removeCallbacks(stopScanRunnable)
         if (!bluetoothAdapter.isEnabled) {
             return
@@ -176,7 +177,9 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         }
         if (isScanning) {
             isScanning = false
-            handleScanCallback(false, null, -1, "")
+            if (!quietly) {
+                handleScanCallback(false, null, -1, "")
+            }
         }
     }
 

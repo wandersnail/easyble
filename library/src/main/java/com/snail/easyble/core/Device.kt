@@ -75,11 +75,11 @@ open class Device constructor(val originalDevice: BluetoothDevice) : Comparable<
     
     protected fun readFromParcel(source: Parcel) {
         advData = source.createByteArray()
-        name = source.readString()!!
-        devId = source.readString()!!
-        addr = source.readString()!!
-        firmware = source.readString()!!
-        hardware = source.readString()!!
+        name = source.readString() ?: ""
+        devId = source.readString() ?: ""
+        addr = source.readString() ?: ""
+        firmware = source.readString() ?: ""
+        hardware = source.readString() ?: ""
         battery = source.readInt()
         rssi = source.readInt()
         connectionState = source.readInt()

@@ -239,6 +239,15 @@ class Ble private constructor() {
     }
 
     /**
+     * 停止搜索，不触发回调
+     */
+    fun stopScanQuietly() {
+        if (checkInitStateAndContext()) {
+            scanner?.stopScan(true)
+        }
+    }
+
+    /**
      * 建立连接
      */
     @Synchronized
@@ -458,7 +467,6 @@ class Ble private constructor() {
     }
 
     companion object {
-        val instance: Ble
-            get() = Holder.BLE
+        val instance = Holder.BLE
     }
 }
