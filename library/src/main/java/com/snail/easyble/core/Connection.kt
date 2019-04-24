@@ -17,7 +17,6 @@ import java.util.*
  * author: zengfansheng
  */
 class Connection private constructor(device: Device, bluetoothDevice: BluetoothDevice, config: ConnectionConfig) : BaseConnection(device, bluetoothDevice, config) {
-
     private var stateChangeListener: ConnectionStateChangeListener? = null
     private var connStartTime = 0L //用于连接超时计时
     private var refreshTimes = 0 //刷新计数，在发现服务后清零
@@ -26,6 +25,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     private var reconnectImmediatelyCount = 0 //不搜索直接重连计数
     private var refreshing = false
     private var isActiveDisconnect = false
+    private var lastScanStopTime = 0L
 
     internal val isAutoReconnectEnabled: Boolean
         get() = config.isAutoReconnect
@@ -33,6 +33,11 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     val connctionState: Int
         get() = device.connectionState
 
+    @Synchronized
+    internal fun onScanStop() {
+        lastScanStopTime = System.currentTimeMillis()
+    }
+    
     @Synchronized
     internal fun onScanResult(addr: String) {
         if (!isReleased && device.addr == addr && device.connectionState == IConnection.STATE_SCANNING) {
@@ -193,8 +198,9 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
             }
             if (refreshing) {
                 connHandler.postDelayed({ cancelRefreshState() }, 2000)
-            } else {
-                cancelRefreshState()
+            } else if (bluetoothGatt != null) {
+                closeGatt(bluetoothGatt)
+                bluetoothGatt = null
             }
         }
         notifyDisconnected()
@@ -211,29 +217,33 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
     }
 
     private fun doConnect() {
-        cancelRefreshState()
+        cancelRefreshState()        
         device.connectionState = IConnection.STATE_CONNECTING
         sendConnectionCallback()
         BleLogger.handleLog(Log.DEBUG, "connecting [name: ${device.name}, addr: ${device.addr}]")        
-        connHandler.postDelayed({
-            if (!isReleased) {
-                //连接之前必须先停止搜索
-                Ble.instance.stopScan()
-                bluetoothGatt = when {
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
-                        bluetoothDevice.connectGatt(Ble.instance.context, false, this@Connection, config.transport, config.phy)
-                    }
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
-                        bluetoothDevice.connectGatt(Ble.instance.context, false, this@Connection, config.transport)
-                    }
-                    else -> bluetoothDevice.connectGatt(Ble.instance.context, false, this@Connection)
+        connHandler.postDelayed(connectRunnable, 500)
+    }
+    
+    private val connectRunnable = {
+        if (!isReleased) {
+            //连接之前必须先停止搜索
+            Ble.instance.stopScan()
+            bluetoothGatt = when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
+                    bluetoothDevice.connectGatt(Ble.instance.context, false, this, config.transport, config.phy)
                 }
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
+                    bluetoothDevice.connectGatt(Ble.instance.context, false, this, config.transport)
+                }
+                else -> bluetoothDevice.connectGatt(Ble.instance.context, false, this)
             }
-        }, 500)
+        }
     }
 
     private fun doDisconnect(reconnect: Boolean, notify: Boolean = true) {
         clearRequestQueueAndNotify()
+        connHandler.removeCallbacks(connectRunnable)
+        connHandler.removeMessages(MSG_DISCOVER_SERVICES)
         if (bluetoothGatt != null) {
             closeGatt(bluetoothGatt)
             bluetoothGatt = null
@@ -244,13 +254,18 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
             super.release()
             BleLogger.handleLog(Log.DEBUG, "connection released! [name: ${device.name}, addr: ${device.addr}]")
         } else if (reconnect) {
-            tryReconnectTimes++
             if (reconnectImmediatelyCount < config.reconnectImmediatelyTimes) {
+                tryReconnectTimes++
                 reconnectImmediatelyCount++
                 connStartTime = System.currentTimeMillis()
                 doConnect()
             } else {
-                tryScanReconnect()
+                val duration = System.currentTimeMillis() - lastScanStopTime
+                if ((tryReconnectTimes >= 10 && duration >= 60000) || (tryReconnectTimes >= 5 && duration >= 30000) ||
+                    (tryReconnectTimes >= 3 && duration >= 10000) || (tryReconnectTimes >= 1 && duration >= 5000) ||
+                    (tryReconnectTimes < 1 && duration >= 2000)) {
+                    tryScanReconnect()
+                }                
             }
         }
         if (notify) {
@@ -270,19 +285,15 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
 
     private fun tryScanReconnect() {
         if (!isReleased) {
-            connStartTime = System.currentTimeMillis()
+            connStartTime = System.currentTimeMillis()            
             Ble.instance.stopScan()
-            connHandler.postDelayed({
-                if (!isReleased) {
-                    //搜索设备，搜索到才执行连接
-                    device.connectionState = IConnection.STATE_SCANNING
-                    BleLogger.handleLog(Log.DEBUG, "scanning [name: ${device.name}, addr: ${device.addr}]")
-                    Ble.instance.startScan()
-                }
-            }, 2000)
+            //搜索设备，搜索到才执行连接
+            device.connectionState = IConnection.STATE_SCANNING
+            BleLogger.handleLog(Log.DEBUG, "scanning [name: ${device.name}, addr: ${device.addr}]")
+            Ble.instance.startScan()
         }
     }
-
+    
     private fun doClearTaskAndRefresh() {
         clearRequestQueueAndNotify()
         doRefresh(true)

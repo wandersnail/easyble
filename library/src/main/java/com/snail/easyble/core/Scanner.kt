@@ -35,7 +35,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     private var scanCallback: ScanCallback? = null
     private var leScanCallback: BluetoothAdapter.LeScanCallback? = null
     private val scanListeners = ArrayList<ScanListener>()
-    private var resultCallback: (BluetoothDevice, Int, ByteArray?) -> Unit = { _, _, _ -> }
+    private var internalScanListener: InternalScanListener? = null
     
     //位置服务是否开户
     private fun isLocationEnabled(context: Context): Boolean {
@@ -114,8 +114,8 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     /**
      * 开始搜索
      */
-    fun startScan(context: Context, resultCallback: (BluetoothDevice, Int, ByteArray?) -> Unit) {
-        this.resultCallback = resultCallback
+    fun startScan(context: Context, callback: InternalScanListener?) {
+        this.internalScanListener = callback
         synchronized(this) {
             if (!bluetoothAdapter.isEnabled || isScanning) {
                 return
@@ -177,6 +177,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         }
         if (isScanning) {
             isScanning = false
+            internalScanListener?.onScanStop()
             if (!quietly) {
                 handleScanCallback(false, null, -1, "")
             }
@@ -207,7 +208,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
             !device.address.matches("^[0-9A-F]{2}(:[0-9A-F]{2}){5}$".toRegex())) {
             return
         }
-        resultCallback(device, rssi, advData)
+        internalScanListener?.onScanResult(device, rssi, advData)
         val deviceName = if (TextUtils.isEmpty(device.name)) "" else device.name
         if ((getScanConfig().names.isEmpty() && getScanConfig().addrs.isEmpty() && getScanConfig().uuids.isEmpty() && getScanConfig().rssiLimit <= rssi) ||
                 getScanConfig().names.contains(device.name) || getScanConfig().addrs.contains(device.address) || BleUtils.hasUuid(getScanConfig().uuids, advData)){
@@ -241,5 +242,17 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     fun release() {
         scanListeners.clear()
         stopScan()
+    }
+
+    internal interface InternalScanListener {
+        /**
+         * 蓝牙搜索停止
+         */
+        fun onScanStop()
+
+        /**
+         * 搜索到BLE设备
+         */
+        fun onScanResult(device: BluetoothDevice, rssi: Int, advData: ByteArray?)
     }
 }

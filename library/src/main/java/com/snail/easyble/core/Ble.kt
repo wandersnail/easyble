@@ -221,11 +221,15 @@ class Ble private constructor() {
      */
     fun startScan() {
         if (checkInitStateAndContext()) {
-            scanner?.startScan(app!!) { device, _, _ ->
-                for (connection in connectionMap.values) {
-                    connection.onScanResult(device.address)
+            scanner?.startScan(app!!, object : Scanner.InternalScanListener {
+                override fun onScanStop() {
+                    connectionMap.values.forEach { it.onScanStop() }
                 }
-            }
+
+                override fun onScanResult(device: BluetoothDevice, rssi: Int, advData: ByteArray?) {
+                    connectionMap.values.forEach { it.onScanResult(device.address) }
+                }
+            })
         }
     }
 

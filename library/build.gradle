@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'com.novoda.bintray-release'
 
-def lib_version = '1.2.2'
+def lib_version = '1.2.3'
 
 android {
     compileSdkVersion build_versions.target_sdk
