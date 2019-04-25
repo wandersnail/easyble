@@ -10,7 +10,6 @@ import com.snail.easyble.annotation.InvokeThread
 import com.snail.easyble.annotation.RunOn
 import com.snail.easyble.callback.*
 import com.snail.easyble.core.*
-import com.snail.easyble.util.BleLogger
 import com.snail.easyble.util.BleUtils
 import kotlinx.android.synthetic.main.activity_connection.*
 import java.util.*
@@ -21,14 +20,16 @@ import java.util.*
  * author: zengfansheng
  */
 class ConnectionActivity : AppCompatActivity() {
-    private var device: Device? = null
-    private val UUID_SERVICE = UUID.fromString("0000ffe0-0000-1000-8000-00805f9b34fb")
-    private val UUID_RX_CHAR = UUID.fromString("0000ffe3-0000-1000-8000-00805f9b34fb")
-    private val UUID_NOTIFICATION_CHAR = UUID.fromString("0000ffe1-0000-1000-8000-00805f9b34fb")
+    companion object {
+        private val UUID_SERVICE = UUID.fromString("0000ffe0-0000-1000-8000-00805f9b34fb")
+        private val UUID_RX_CHAR = UUID.fromString("0000ffe3-0000-1000-8000-00805f9b34fb")
+        private val UUID_NOTIFICATION_CHAR = UUID.fromString("0000ffe1-0000-1000-8000-00805f9b34fb")
 
 
-    private val UUID_SERVICE_1 = UUID.fromString("00001800-0000-1000-8000-00805f9b34fb")
-    private val UUID_READ = UUID.fromString("00002a00-0000-1000-8000-00805f9b34fb")
+        private val UUID_SERVICE_1 = UUID.fromString("00001800-0000-1000-8000-00805f9b34fb")
+        private val UUID_READ = UUID.fromString("00002a00-0000-1000-8000-00805f9b34fb")
+    }
+    private var device: Device? = null    
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,47 +75,47 @@ class ConnectionActivity : AppCompatActivity() {
                     connection?.setCharacteristicChangedCallback(object : CharacteristicChangedCallback {
                         @InvokeThread(RunOn.POSTING)
                         override fun onCharacteristicChanged(device: Device, serviceUuid: UUID, characteristicUuid: UUID, value: ByteArray) {
-                            BleLogger.handleLog(Log.ERROR, "数据：${BleUtils.bytesToHexString(value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                            Log.e("Connection", "数据：${BleUtils.bytesToHexString(value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                         }
                     })
                     connection?.enableNotification("", UUID_SERVICE, UUID_NOTIFICATION_CHAR, object : NotificationChangedCallback {
                         @InvokeThread(RunOn.MAIN)
                         override fun onNotificationChanged(device: Device, tag: String, serviceUuid: UUID, characteristicUuid: UUID, descriptorUuid: UUID, isEnabled: Boolean) {
-                            BleLogger.handleLog(Log.ERROR, "RequestCallback toggleNotification onSuccess, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                            Log.e("Connection", "RequestCallback toggleNotification onSuccess, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                         }
 
                         override fun onRequestFailed(device: Device, tag: String, requestType: Request.RequestType, failType: Int, src: ByteArray?) {
-                            BleLogger.handleLog(Log.ERROR, "RequestCallback toggleNotification onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                            Log.e("Connection", "RequestCallback toggleNotification onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                         }
                     })
                     connection?.writeCharacteristic("", UUID_SERVICE, UUID_RX_CHAR, byteArrayOf(0xa5.toByte()), object : CharacteristicWriteCallback {
                         @InvokeThread(RunOn.BACKGROUND)
                         override fun onCharacteristicWrite(device: Device, tag: String, serviceUuid: UUID, characteristicUuid: UUID, value: ByteArray) {
-                            BleLogger.handleLog(Log.ERROR, "RequestCallback writeCharacteristic onSuccess, 数据：${BleUtils.bytesToHexString(value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                            Log.e("Connection", "RequestCallback writeCharacteristic onSuccess, 数据：${BleUtils.bytesToHexString(value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                         }
 
                         override fun onRequestFailed(device: Device, tag: String, requestType: Request.RequestType, failType: Int, src: ByteArray?) {
-                            BleLogger.handleLog(Log.ERROR, "RequestCallback writeCharacteristic onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                            Log.e("Connection", "RequestCallback writeCharacteristic onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                         }
                     })
 
                     connection?.readRssi("", object : RemoteRssiReadCallback {
                         override fun onRemoteRssiRead(device: Device, tag: String, rssi: Int) {
-                            BleLogger.handleLog(Log.ERROR, "RequestCallback readRssi onSuccess, rssi: $rssi")
+                            Log.e("Connection", "RequestCallback readRssi onSuccess, rssi: $rssi")
                         }
 
                         override fun onRequestFailed(device: Device, tag: String, requestType: Request.RequestType, failType: Int, src: ByteArray?) {
-                            BleLogger.handleLog(Log.ERROR, "RequestCallback readRssi onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                            Log.e("Connection", "RequestCallback readRssi onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                         }
                     })
 
                     connection?.readCharacteristic("", UUID_SERVICE_1, UUID_READ, object : CharacteristicReadCallback {
                         override fun onCharacteristicRead(device: Device, tag: String, serviceUuid: UUID, characteristicUuid: UUID, value: ByteArray) {
-                            BleLogger.handleLog(Log.ERROR, "RequestCallback readCharacteristic onSuccess, Device Name: ${String(value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                            Log.e("Connection", "RequestCallback readCharacteristic onSuccess, Device Name: ${String(value)}, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                         }
 
                         override fun onRequestFailed(device: Device, tag: String, requestType: Request.RequestType, failType: Int, src: ByteArray?) {
-                            BleLogger.handleLog(Log.DEBUG, "RequestCallback readCharacteristic onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                            Log.d("Connection", "RequestCallback readCharacteristic onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                         }
                     })
 
@@ -122,12 +123,12 @@ class ConnectionActivity : AppCompatActivity() {
                         connection?.changeMtu("", 256, object : MtuChangedCallback {
                             @InvokeThread(RunOn.MAIN)
                             override fun onMtuChanged(device: Device, tag: String, mtu: Int) {
-                                BleLogger.handleLog(Log.ERROR, "RequestCallback changeMtu onSuccess, mtu: $mtu, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                                Log.e("Connection", "RequestCallback changeMtu onSuccess, mtu: $mtu, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                             }
 
                             @InvokeThread(RunOn.MAIN)
                             override fun onRequestFailed(device: Device, tag: String, requestType: Request.RequestType, failType: Int, src: ByteArray?) {
-                                BleLogger.handleLog(Log.ERROR, "RequestCallback changeMtu onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                                Log.e("Connection", "RequestCallback changeMtu onFail, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
                             }
                         })
                     }

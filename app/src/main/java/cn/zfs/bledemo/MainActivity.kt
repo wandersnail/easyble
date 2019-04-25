@@ -21,7 +21,6 @@ import com.snail.easyble.callback.ScanListener
 import com.snail.easyble.core.Ble
 import com.snail.easyble.core.Device
 import com.snail.easyble.core.ScanConfig
-import com.snail.easyble.util.BleLogger
 import com.snail.widget.listview.BaseListAdapter
 import com.snail.widget.listview.BaseViewHolder
 import kotlinx.android.synthetic.main.activity_main.*
@@ -103,7 +102,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        BleLogger.handleLog(Log.DEBUG, "onResume")
+        Log.d("Main", "onResume")
         if (Ble.instance.isInitialized) {
             if (Ble.instance.isBluetoothAdapterEnabled) {
                 doStartScan()
@@ -180,7 +179,7 @@ class MainActivity : AppCompatActivity() {
         listAdapter?.clear()
         layoutEmpty.visibility = View.VISIBLE
         Ble.instance.startScan()
-        BleLogger.handleLog(Log.DEBUG, "doStartScan")
+        Log.d("Main", "doStartScan")
     }
 
     private val scanListener = object : ScanListener {

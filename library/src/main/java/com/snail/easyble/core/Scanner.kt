@@ -123,12 +123,12 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
             if (!isLocationEnabled(context)) {
                 val errorMsg = "Unable to scan for Bluetooth devices, the phone's location service is not turned on."
                 handleScanCallback(false, null, ScanListener.ERROR_LOCATION_SERVICE_CLOSED, errorMsg)
-                BleLogger.handleLog(Log.ERROR, errorMsg)
+                Ble.instance.logger.handleLog(Log.ERROR, errorMsg, BleLogger.TYPE_SCAN_STATE)
                 return
             } else if (noLocationPermission(context)) {
                 val errorMsg = "Unable to scan for Bluetooth devices, lack location permission."
                 handleScanCallback(false, null, ScanListener.ERROR_LACK_LOCATION_PERMISSION, errorMsg)
-                BleLogger.handleLog(Log.ERROR, errorMsg)
+                Ble.instance.logger.handleLog(Log.ERROR, errorMsg, BleLogger.TYPE_SCAN_STATE)
                 return
             }
             isScanning = true
@@ -231,7 +231,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
                 handleScanCallback(false, dev, -1, "")
             }
         }
-        BleLogger.handleLog(Log.DEBUG, "found device! [name: ${if (deviceName.isEmpty()) "N/A" else deviceName}, addr: ${device.address}]")
+        Ble.instance.logger.handleLog(Log.DEBUG, "found device! [name: ${if (deviceName.isEmpty()) "N/A" else deviceName}, addr: ${device.address}]", BleLogger.TYPE_SCAN_STATE)
     }
         
     fun onBluethoothOff() {

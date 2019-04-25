@@ -16,7 +16,6 @@ import com.snail.easyble.callback.ConnectionStateChangeListener
 import com.snail.easyble.callback.ScanListener
 import com.snail.easyble.util.BleLogger
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
@@ -28,21 +27,18 @@ import java.util.concurrent.Executors
 class Ble private constructor() {
     var bluetoothAdapter: BluetoothAdapter? = null
         private set
-    private val connectionMap: MutableMap<String, Connection>
+    private val connectionMap = ConcurrentHashMap<String, Connection>()
     private var isInited: Boolean = false
     var bleConfig = BleConfig()    
-    private val mainHandler: Handler
-    private val executorService: ExecutorService
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val executorService = Executors.newCachedThreadPool()
     private var app: Application? = null
     private var scanner: Scanner? = null
     private var broadcastReceiver: BroadcastReceiver? = null
-    private val methodPoster: MethodPoster
+    private val methodPoster = MethodPoster(executorService, mainHandler)
+    val logger = BleLogger()
 
     init {
-        connectionMap = ConcurrentHashMap()
-        mainHandler = Handler(Looper.getMainLooper())
-        executorService = Executors.newCachedThreadPool()
-        methodPoster = MethodPoster(executorService, mainHandler)
         mainHandler.post { tryGetContext() }
     }
     
@@ -148,7 +144,7 @@ class Ble private constructor() {
             if (!tryAutoInit()) {
                 val message = "The SDK has not been initialized, make sure to call Ble.getInstance().initialize(Application) first."
                 Exception(message).printStackTrace()
-                BleLogger.handleLog(Log.ERROR, message)
+                logger.handleLog(Log.ERROR, message)
                 return false
             }
         } else if (app == null) {
