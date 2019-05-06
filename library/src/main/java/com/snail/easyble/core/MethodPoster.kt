@@ -29,19 +29,16 @@ internal class MethodPoster(private val executorService: ExecutorService, privat
 
     fun post(obj: Any, methodName: String, valueTypePairs: Array<ValueTypePair>?) {
         if (valueTypePairs == null || valueTypePairs.isEmpty()) {
-            var method: Method? = null
             try {
-                method = obj.javaClass.getMethod(methodName)
-            } catch (e: NoSuchMethodException) {
-                e.printStackTrace()
-            }
-            post(method, Runnable {
-                try {
-                    method?.invoke(obj)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            })
+                val method = obj.javaClass.getMethod(methodName)
+                post(method, Runnable {
+                    try {
+                        method.invoke(obj)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                })
+            } catch (e: NoSuchMethodException) {}            
         } else {
             val params = arrayOfNulls<Any>(valueTypePairs.size)
             val paramTypes = arrayOfNulls<Class<*>>(valueTypePairs.size)
@@ -49,19 +46,16 @@ internal class MethodPoster(private val executorService: ExecutorService, privat
                 params[i] = vt.value
                 paramTypes[i] = vt.valueType
             }
-            var method: Method? = null
             try {
-                method = obj.javaClass.getMethod(methodName, *paramTypes)
-            } catch (e: NoSuchMethodException) {
-                e.printStackTrace()
-            }
-            post(method, Runnable {
-                try {
-                    method?.invoke(obj, *params)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            })
+                val method = obj.javaClass.getMethod(methodName, *paramTypes)
+                post(method, Runnable {
+                    try {
+                        method.invoke(obj, *params)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                })
+            } catch (e: NoSuchMethodException) {}            
         }
     }
 
