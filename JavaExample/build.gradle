@@ -1,4 +1,4 @@
-def isRunAlone = runnableModule.toInteger() == 0
+def isRunAlone = runnableModule.toInteger() == 1
 if (isRunAlone) {
     apply plugin: 'com.android.application'
 } else {
@@ -35,8 +35,8 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation deps.appcompat
-    implementation deps.mmkv
     implementation deps.kotlin.stdlib
+    implementation deps.mmkv
     implementation deps.wandersnail.commons_android
     implementation deps.wandersnail.widgets
     implementation project(':library')

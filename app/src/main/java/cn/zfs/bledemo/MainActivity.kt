@@ -15,14 +15,14 @@ import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.snail.commons.helper.PermissionsRequester
-import com.snail.commons.utils.PreferencesUtils
+import com.snail.commons.entity.PermissionsRequester
 import com.snail.easyble.callback.ScanListener
 import com.snail.easyble.core.Ble
 import com.snail.easyble.core.Device
 import com.snail.easyble.core.ScanConfig
 import com.snail.widget.listview.BaseListAdapter
 import com.snail.widget.listview.BaseViewHolder
+import com.tencent.mmkv.MMKV
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlin.system.exitProcess
 
@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
         Ble.instance.addScanListener(scanListener)
         val scanConfig = ScanConfig().setAcceptSysConnectedDevice(false)
                 .setHideNonBleDevice(true)
-                .setUseBluetoothLeScanner(PreferencesUtils.getBoolean(Consts.SP_KEY_USE_NEW_SCANNER, true))
+                .setUseBluetoothLeScanner(MMKV.defaultMMKV().getBoolean(Consts.SP_KEY_USE_NEW_SCANNER, true))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             scanConfig.setScanSettings(ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build())
         }
