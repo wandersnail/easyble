@@ -43,7 +43,7 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             scanConfig.setScanSettings(ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build())
         }
-        Ble.instance.bleConfig.setScanConfig(scanConfig)
+        Ble.instance.bleConfig.scanConfig = scanConfig
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
