@@ -12,4 +12,4 @@ import java.lang.annotation.Inherited
 @Inherited
 @kotlin.annotation.Retention
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER, AnnotationTarget.PROPERTY_SETTER)
-annotation class InvokeThread(val value: RunOn = RunOn.POSTING)
+annotation class InvokeThread(val value: RunOn)

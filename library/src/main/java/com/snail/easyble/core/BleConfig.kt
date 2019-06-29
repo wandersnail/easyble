@@ -1,52 +1,31 @@
 package com.snail.easyble.core
 
+import com.snail.easyble.annotation.RunOn
+
 /**
- * 
+ *
  * date: 2018/8/5 18:28
  * author: zengfansheng
  */
 open class BleConfig {
-    /** 搜索设置 */
-    var scanConfig = ScanConfig()
-        protected set
-    /** 是否在连接时配对 */
-    var bondController: IBondController? = null
-        protected set    
-    /** [Device]实例构建器，搜索到BLE设备时，使用此构建器实例化[Device] */
-    var deviceCreator: IDeviceCreator? = null
-        protected set
-    var eventObservable: EventObservable = EventObservable()
-        protected set
-
-    /**
-     * 数据发布者（被观察者）
-     */
-    fun setEventObservable(observable: EventObservable): BleConfig {
-        eventObservable = observable
-        return this
-    }
-    
     /**
      * 搜索设置
      */
-    fun setScanConfig(config: ScanConfig): BleConfig {
-        scanConfig = config
-        return this
-    }
-
+    open var scanConfig = ScanConfig()
     /**
      * 是否在连接时配对
      */
-    fun setBondController(bondController: IBondController?): BleConfig {
-        this.bondController = bondController
-        return this
-    }
-
+    open var bondController: IBondController? = null
     /**
      * [Device]实例构建器，搜索到BLE设备时，使用此构建器实例化[Device]
      */
-    fun setDeviceCreator(creator: IDeviceCreator?): BleConfig {
-        deviceCreator = creator
-        return this
-    }
+    open var deviceCreator: IDeviceCreator? = null
+    /**
+     * 数据发布者（被观察者）
+     */
+    open var eventObservable: EventObservable = EventObservable()
+    /**
+     * 观察者或者回调的方法在没有使用注解指定调用线程时，默认被调用的线程
+     */
+    open var methodDefaultInvokeThread = RunOn.POSTING
 }

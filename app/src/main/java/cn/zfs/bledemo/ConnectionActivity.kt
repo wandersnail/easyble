@@ -21,9 +21,9 @@ import java.util.*
  */
 class ConnectionActivity : AppCompatActivity() {
     companion object {
-        private val UUID_SERVICE = UUID.fromString("0000ffe0-0000-1000-8000-00805f9b34fb")
-        private val UUID_RX_CHAR = UUID.fromString("0000ffe3-0000-1000-8000-00805f9b34fb")
-        private val UUID_NOTIFICATION_CHAR = UUID.fromString("0000ffe1-0000-1000-8000-00805f9b34fb")
+        private val UUID_SERVICE = UUID.fromString("6e400001-b5a3-f393-e0a9-e50e24dcca9e")
+        private val UUID_RX_CHAR = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e")
+        private val UUID_NOTIFICATION_CHAR = UUID.fromString("6e400003-b5a3-f393-e0a9-e50e24dcca9e")
 
 
         private val UUID_SERVICE_1 = UUID.fromString("00001800-0000-1000-8000-00805f9b34fb")
@@ -36,6 +36,7 @@ class ConnectionActivity : AppCompatActivity() {
         title = "功能列表"
         setContentView(R.layout.activity_connection)
         device = intent.getParcelableExtra(Consts.EXTRA_DEVICE)
+//        Ble.instance.bleConfig.methodDefaultInvokeThread = RunOn.MAIN
         Ble.instance.registerObserver(eventObserver)        
         Ble.instance.connect(device!!, getConnectionConfig(true), null)        
         tvName.text = device!!.name
@@ -132,6 +133,11 @@ class ConnectionActivity : AppCompatActivity() {
                             }
                         })
                     }
+                    connection?.setCharacteristicChangedCallback(object : CharacteristicChangedCallback {
+                        override fun onCharacteristicChanged(device: Device, serviceUuid: UUID, characteristicUuid: UUID, value: ByteArray) {
+                            Log.d("Connection", "onCharacteristicChanged, uiThread: ${Looper.getMainLooper() == Looper.myLooper()}")
+                        }
+                    })
                 }
                 IConnection.STATE_RELEASED -> {
                     tvState.text = "连接已释放"

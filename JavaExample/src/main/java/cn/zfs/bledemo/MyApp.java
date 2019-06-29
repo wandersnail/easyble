@@ -2,9 +2,12 @@ package cn.zfs.bledemo;
 
 import android.app.Application;
 import android.util.Log;
+
 import com.snail.commons.AppHolder;
 import com.snail.easyble.core.Ble;
 import com.snail.easyble.util.BleLogger;
+import com.tencent.mmkv.MMKV;
+
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -16,6 +19,7 @@ public class MyApp extends Application {
     public void onCreate() {
         super.onCreate();
         AppHolder.init(this);
+        MMKV.initialize(this);
         Ble.Companion.getInstance().initialize(this);
         Ble.Companion.getInstance().getLogger().setLogEnabled(true);
         Ble.Companion.getInstance().getLogger().setLogCallback(new BleLogger.Callback() {

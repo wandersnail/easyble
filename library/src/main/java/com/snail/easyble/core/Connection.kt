@@ -278,11 +278,11 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
 
     private fun closeGatt(gatt: BluetoothGatt?) {
         try {
-            gatt!!.disconnect()
+            gatt?.disconnect()
         } catch (ignored: Exception) {}
 
         try {
-            gatt!!.close()
+            gatt?.close()
         } catch (ignored: Exception) {}
     }
 

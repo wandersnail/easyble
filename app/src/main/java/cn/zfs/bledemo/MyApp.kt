@@ -6,6 +6,7 @@ import android.util.Log
 import com.snail.commons.AppHolder
 import com.snail.easyble.core.Ble
 import com.snail.easyble.util.BleLogger
+import com.tencent.mmkv.MMKV
 
 
 /**
@@ -18,6 +19,7 @@ class MyApp : Application() {
     override fun onCreate() {
         super.onCreate()
         AppHolder.init(this)
+        MMKV.initialize(this)
         Ble.instance.initialize(this)
         Ble.instance.logger.logEnabled = true
         Ble.instance.logger.logCallback = object : BleLogger.Callback {

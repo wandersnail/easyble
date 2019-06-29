@@ -2,26 +2,44 @@ package cn.zfs.bledemo;
 
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
+import android.util.Log;
 import android.widget.TextView;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
+
+import com.snail.commons.utils.StringUtilsKt;
 import com.snail.commons.utils.ToastUtils;
 import com.snail.easyble.annotation.InvokeThread;
 import com.snail.easyble.annotation.RunOn;
-import com.snail.easyble.callback.*;
-import com.snail.easyble.core.*;
+import com.snail.easyble.callback.CharacteristicChangedCallback;
+import com.snail.easyble.callback.CharacteristicReadCallback;
+import com.snail.easyble.callback.CharacteristicWriteCallback;
+import com.snail.easyble.callback.MtuChangedCallback;
+import com.snail.easyble.callback.NotificationChangedCallback;
+import com.snail.easyble.callback.RemoteRssiReadCallback;
+import com.snail.easyble.core.Ble;
+import com.snail.easyble.core.Connection;
+import com.snail.easyble.core.ConnectionConfig;
+import com.snail.easyble.core.Device;
+import com.snail.easyble.core.EventObserver;
+import com.snail.easyble.core.IConnection;
+import com.snail.easyble.core.Request;
+import com.snail.easyble.core.SimpleEventObserver;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * date: 2019/5/31 18:24
  * author: zengfansheng
  */
 public class ConnectionActivity extends AppCompatActivity {
-    private static final UUID UUID_SERVICE = UUID.fromString("0000ffe0-0000-1000-8000-00805f9b34fb");
-    private static final UUID UUID_RX_CHAR = UUID.fromString("0000ffe3-0000-1000-8000-00805f9b34fb");
-    private static final UUID UUID_NOTIFICATION_CHAR = UUID.fromString("0000ffe1-0000-1000-8000-00805f9b34fb");
+    private static final UUID UUID_SERVICE = UUID.fromString("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
+    private static final UUID UUID_RX_CHAR = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
+    private static final UUID UUID_NOTIFICATION_CHAR = UUID.fromString("6e400003-b5a3-f393-e0a9-e50e24dcca9e");
     private static final UUID UUID_SERVICE_1 = UUID.fromString("00001800-0000-1000-8000-00805f9b34fb");
     private static final UUID UUID_READ = UUID.fromString("00002a00-0000-1000-8000-00805f9b34fb");
     
@@ -42,6 +60,7 @@ public class ConnectionActivity extends AppCompatActivity {
         setContentView(R.layout.activity_connection);
         assignViews();
         device = getIntent().getParcelableExtra(Consts.EXTRA_DEVICE);
+//        Ble.Companion.getInstance().getBleConfig().setMethodDefaultInvokeThread(RunOn.MAIN);
         Ble.Companion.getInstance().registerObserver(eventObserver);
         Ble.Companion.getInstance().connect(device, getConnectionConfig(true), null);
         tvName.setText(device.getName());
@@ -90,7 +109,7 @@ public class ConnectionActivity extends AppCompatActivity {
                         @Override
                         @InvokeThread(RunOn.MAIN)
                         public void onNotificationChanged(@NotNull Device device, @NotNull String tag, @NotNull UUID serviceUuid, @NotNull UUID characteristicUuid, @NotNull UUID descriptorUuid, boolean isEnabled) {
-                            
+                            Log.d("Connection", "onNotificationChanged, uiThread: " + (Looper.getMainLooper() == Looper.myLooper()));
                         }
 
                         @Override
@@ -101,7 +120,7 @@ public class ConnectionActivity extends AppCompatActivity {
                     connection.writeCharacteristic("", UUID_SERVICE, UUID_RX_CHAR, new byte[]{0x5a}, new CharacteristicWriteCallback() {
                         @Override
                         public void onCharacteristicWrite(@NotNull Device device, @NotNull String tag, @NotNull UUID serviceUuid, @NotNull UUID characteristicUuid, @NotNull byte[] value) {
-                            
+                            Log.d("Connection", "onCharacteristicWrite, uiThread: " + (Looper.getMainLooper() == Looper.myLooper()));
                         }
 
                         @Override
@@ -112,7 +131,7 @@ public class ConnectionActivity extends AppCompatActivity {
                     connection.readRssi("", new RemoteRssiReadCallback() {
                         @Override
                         public void onRemoteRssiRead(@NotNull Device device, @NotNull String tag, int rssi) {
-                            
+                            Log.d("Connection", "onRemoteRssiRead, rssi: "+rssi+", uiThread: " + (Looper.getMainLooper() == Looper.myLooper()));
                         }
 
                         @Override
@@ -123,7 +142,7 @@ public class ConnectionActivity extends AppCompatActivity {
                     connection.readCharacteristic("", UUID_SERVICE_1, UUID_READ, new CharacteristicReadCallback() {
                         @Override
                         public void onCharacteristicRead(@NotNull Device device, @NotNull String tag, @NotNull UUID serviceUuid, @NotNull UUID characteristicUuid, @NotNull byte[] value) {
-                            
+                            Log.d("Connection", "onCharacteristicRead, value: "+ StringUtilsKt.toHexString(value) +", uiThread: " + (Looper.getMainLooper() == Looper.myLooper()));
                         }
 
                         @Override
@@ -135,7 +154,7 @@ public class ConnectionActivity extends AppCompatActivity {
                         connection.changeMtu("", 256, new MtuChangedCallback() {
                             @Override
                             public void onMtuChanged(@NotNull Device device, @NotNull String tag, int mtu) {
-                                
+                                Log.d("Connection", "onMtuChanged, mtu: "+mtu+", uiThread: " + (Looper.getMainLooper() == Looper.myLooper()));
                             }
 
                             @Override
@@ -144,6 +163,12 @@ public class ConnectionActivity extends AppCompatActivity {
                             }
                         });
                     }
+                    connection.setCharacteristicChangedCallback(new CharacteristicChangedCallback() {
+                        @Override
+                        public void onCharacteristicChanged(@NotNull Device device, @NotNull UUID serviceUuid, @NotNull UUID characteristicUuid, @NotNull byte[] value) {
+                            Log.d("Connection", "onCharacteristicChanged, uiThread: " + (Looper.getMainLooper() == Looper.myLooper()));
+                        }
+                    });
                     break;
                 case IConnection.STATE_RELEASED:
                     tvState.setText("连接已释放");

@@ -793,8 +793,7 @@ abstract class BaseConnection internal constructor(val device: Device, protected
     }
 
     fun isNotificationOrIndicationEnabled(characteristic: BluetoothGattCharacteristic): Boolean {
-        val descriptor = characteristic.getDescriptor(IConnection.clientCharacteristicConfig)
-                ?: return false
+        val descriptor = characteristic.getDescriptor(IConnection.clientCharacteristicConfig) ?: return false
         return Arrays.equals(descriptor.value, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE) or
                 Arrays.equals(descriptor.value, BluetoothGattDescriptor.ENABLE_INDICATION_VALUE)
     }

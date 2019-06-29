@@ -16,13 +16,11 @@ internal class MethodPoster(private val executorService: ExecutorService, privat
     //Callback on different threads by annotation
     private fun post(method: Method?, runnable: Runnable) {
         if (method != null) {
-            val invokeThread = method.getAnnotation(InvokeThread::class.java)
-            if (invokeThread == null || invokeThread.value === RunOn.POSTING) {
-                runnable.run()
-            } else if (invokeThread.value === RunOn.BACKGROUND) {
-                executorService.execute(runnable)
-            } else {
-                mainHandler.post(runnable)
+            val invokeThreadAnno = method.getAnnotation(InvokeThread::class.java)
+            when (invokeThreadAnno?.value ?: Ble.instance.bleConfig.methodDefaultInvokeThread) {
+                RunOn.MAIN -> mainHandler.post(runnable)
+                RunOn.BACKGROUND -> executorService.execute(runnable)
+                else -> runnable.run()
             }
         }
     }

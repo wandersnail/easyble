@@ -333,6 +333,15 @@ class Ble private constructor() {
     }
 
     /**
+     * 断开连接
+     */
+    fun disconnectConnection(addr: String?) {
+        if (addr != null) {
+            connectionMap[addr]?.disconnect()
+        }
+    }
+
+    /**
      * 断开所有连接
      */
     fun disconnectAllConnections() {
@@ -346,6 +355,16 @@ class Ble private constructor() {
     fun releaseAllConnections() {
         connectionMap.values.forEach { it.release() }
         connectionMap.clear()
+    }
+
+    /**
+     * 释放连接
+     */
+    @Synchronized
+    fun releaseConnection(addr: String?) {
+        if (addr != null) {
+            connectionMap.remove(addr)?.release()
+        }
     }
 
     /**
