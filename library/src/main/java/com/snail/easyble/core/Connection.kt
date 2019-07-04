@@ -262,13 +262,8 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
                 reconnectImmediatelyCount++
                 connStartTime = System.currentTimeMillis()
                 doConnect()
-            } else {
-                val duration = System.currentTimeMillis() - lastScanStopTime
-                if ((tryReconnectTimes >= 10 && duration >= 60000) || (tryReconnectTimes >= 5 && duration >= 30000) ||
-                    (tryReconnectTimes >= 3 && duration >= 10000) || (tryReconnectTimes >= 1 && duration >= 5000) ||
-                    (tryReconnectTimes < 1 && duration >= 2000)) {
-                    tryScanReconnect()
-                }                
+            } else if (canScanReconnect()) {
+                tryScanReconnect()
             }
         }
         if (notify) {
@@ -295,6 +290,19 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
             Ble.instance.logger.handleLog(Log.DEBUG, "scanning [name: ${device.name}, addr: ${device.addr}]", BleLogger.TYPE_CONNECTION_STATE)
             Ble.instance.startScan()
         }
+    }
+    
+    private fun canScanReconnect(): Boolean {
+        val duration = System.currentTimeMillis() - lastScanStopTime
+        val pairs = Ble.instance.bleConfig.scanIntervalPairsInAutoReonnection
+        pairs.sortBy { it.first }
+        pairs.reverse()
+        pairs.forEach { 
+            if (tryReconnectTimes >= it.first && duration >= it.second) {
+                return true
+            }
+        }
+        return false
     }
     
     private fun doClearTaskAndRefresh() {

@@ -28,4 +28,8 @@ open class BleConfig {
      * 观察者或者回调的方法在没有使用注解指定调用线程时，默认被调用的线程
      */
     open var methodDefaultInvokeThread = RunOn.POSTING
+    /**
+     * 自动重连时，搜索次数与间隔的对应关系，key：已尝试次数，value：间隔，单位为毫秒。如搜索了1次，间隔2秒，搜索了5次，间隔30秒等
+     */
+    open var scanIntervalPairsInAutoReonnection = mutableListOf(Pair(0, 2000), Pair(1, 5000), Pair(3, 10000), Pair(5, 30000), Pair(10, 60000))
 }
