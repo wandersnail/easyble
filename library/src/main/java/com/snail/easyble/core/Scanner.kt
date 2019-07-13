@@ -240,9 +240,10 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
             return
         }
         internalScanListener?.onScanResult(device, rssi, advData)
-        val deviceName = if (TextUtils.isEmpty(device.name)) "" else device.name
+        val origDevName = device.name
+        val deviceName = if (TextUtils.isEmpty(origDevName)) "" else origDevName
         if ((getScanConfig().names.isEmpty() && getScanConfig().addrs.isEmpty() && getScanConfig().uuids.isEmpty() && getScanConfig().rssiLimit <= rssi) ||
-                getScanConfig().names.contains(device.name) || getScanConfig().addrs.contains(device.address) || BleUtils.hasUuid(getScanConfig().uuids, advData)){
+                getScanConfig().names.contains(origDevName) || getScanConfig().addrs.contains(device.address) || BleUtils.hasUuid(getScanConfig().uuids, advData)){
             //通过构建器实例化Device
             val deviceCreater = Ble.instance.bleConfig.deviceCreator
             var dev = deviceCreater?.valueOf(device, advData)
