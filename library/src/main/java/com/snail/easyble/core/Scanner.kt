@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.TargetApi
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -88,7 +89,33 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         }
     }
 
-    private fun getSystemConnectedDevices() {
+    private fun getSystemConnectedDevices(context: Context, profile: Int) {
+        val connectionState = bluetoothAdapter.getProfileConnectionState(profile)
+        if (connectionState == BluetoothProfile.STATE_CONNECTED) {
+            bluetoothAdapter.getProfileProxy(context, object : BluetoothProfile.ServiceListener {
+                override fun onServiceDisconnected(profile: Int) {}
+
+                override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
+                    synchronized(this@Scanner) {
+                        if (!isScanning) {
+                            return
+                        }
+                    }
+                    proxy?.connectedDevices?.forEach {
+                        parseScanResult(it, 0, null, null)
+                    }
+                }
+            }, profile)
+        }
+    }
+
+    private fun getSystemConnectedDevices(context: Context) {
+        getSystemConnectedDevices(context, BluetoothProfile.HEADSET)
+        getSystemConnectedDevices(context, BluetoothProfile.A2DP)
+        getSystemConnectedDevices(context, BluetoothProfile.HEALTH)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            getSystemConnectedDevices(context, BluetoothProfile.HID_DEVICE)
+        }
         try {
             val method = bluetoothAdapter.javaClass.getDeclaredMethod("getConnectionState")
             method.isAccessible = true
@@ -135,7 +162,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         }
         handleScanCallback(true, null, -1, "")
         if (getScanConfig().isAcceptSysConnectedDevice) {
-            getSystemConnectedDevices()
+            getSystemConnectedDevices(context)
         }
         if (getScanConfig().isUseBluetoothLeScanner && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if (bleScanner == null) {

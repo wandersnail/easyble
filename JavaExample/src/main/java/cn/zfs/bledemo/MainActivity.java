@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
         initialize();
         initViews();
         Ble.Companion.getInstance().addScanListener(scanListener);
-        ScanConfig scanConfig = new ScanConfig().setAcceptSysConnectedDevice(false)
+        ScanConfig scanConfig = new ScanConfig().setAcceptSysConnectedDevice(true)
                 .setHideNonBleDevice(true)
                 .setUseBluetoothLeScanner(MMKV.defaultMMKV().getBoolean(Consts.SP_KEY_USE_NEW_SCANNER, true));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
