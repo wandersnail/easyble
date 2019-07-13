@@ -16,12 +16,11 @@ import android.os.Handler
 import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
+import android.util.SparseArray
 import androidx.core.content.ContextCompat
 import com.snail.easyble.callback.ScanListener
 import com.snail.easyble.util.BleLogger
 import com.snail.easyble.util.BleUtils
-import java.util.*
-
 
 
 /**
@@ -37,7 +36,8 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     private var leScanCallback: BluetoothAdapter.LeScanCallback? = null
     private val scanListeners = ArrayList<ScanListener>()
     private var internalScanListener: InternalScanListener? = null
-    
+    private var proxyBluetoothProfiles = SparseArray<BluetoothProfile>()
+
     //位置服务是否开户
     private fun isLocationEnabled(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -90,32 +90,26 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     }
 
     private fun getSystemConnectedDevices(context: Context, profile: Int) {
-        val connectionState = bluetoothAdapter.getProfileConnectionState(profile)
-        if (connectionState == BluetoothProfile.STATE_CONNECTED) {
-            bluetoothAdapter.getProfileProxy(context, object : BluetoothProfile.ServiceListener {
-                override fun onServiceDisconnected(profile: Int) {}
+        bluetoothAdapter.getProfileProxy(context, object : BluetoothProfile.ServiceListener {
+            override fun onServiceDisconnected(profile: Int) {}
 
-                override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
-                    synchronized(this@Scanner) {
-                        if (!isScanning) {
-                            return
-                        }
-                    }
-                    proxy?.connectedDevices?.forEach {
-                        parseScanResult(it, 0, null, null)
+            override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
+                if (proxy != null) {
+                    proxyBluetoothProfiles.put(profile, proxy)
+                }
+                synchronized(this@Scanner) {
+                    if (!isScanning) {
+                        return
                     }
                 }
-            }, profile)
-        }
+                proxy?.connectedDevices?.forEach {
+                    parseScanResult(it, 0, null, null)
+                }
+            }
+        }, profile)
     }
 
     private fun getSystemConnectedDevices(context: Context) {
-        getSystemConnectedDevices(context, BluetoothProfile.HEADSET)
-        getSystemConnectedDevices(context, BluetoothProfile.A2DP)
-        getSystemConnectedDevices(context, BluetoothProfile.HEALTH)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            getSystemConnectedDevices(context, BluetoothProfile.HID_DEVICE)
-        }
         try {
             val method = bluetoothAdapter.javaClass.getDeclaredMethod("getConnectionState")
             method.isAccessible = true
@@ -127,12 +121,18 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
                     isConnectedMethod.isAccessible = true
                     val isConnected = isConnectedMethod.invoke(device) as Boolean
                     if (isConnected) {
-                        parseScanResult(device, 0, null, null)                        
+                        parseScanResult(device, 0, null, null)
                     }
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+        //遍历支持的，获取所有连接的
+        for (i in 1..21) {
+            try {
+                getSystemConnectedDevices(context, i)
+            } catch (e: Exception) {}
         }
     }
 
@@ -191,6 +191,10 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
     @JvmOverloads
     fun stopScan(quietly: Boolean = false) {
         mainThreadHandler.removeCallbacks(stopScanRunnable)
+        val size = proxyBluetoothProfiles.size()
+        for (i in 0 until size) {
+            bluetoothAdapter.closeProfileProxy(proxyBluetoothProfiles.keyAt(i), proxyBluetoothProfiles.valueAt(i))
+        }
         if (!bluetoothAdapter.isEnabled) {
             return
         }

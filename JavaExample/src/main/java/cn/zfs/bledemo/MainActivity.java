@@ -52,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
         layoutEmpty = findViewById(R.id.layoutEmpty);
     }
 
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

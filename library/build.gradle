@@ -4,7 +4,7 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'maven'
 
-def lib_version = '1.2.8'
+def lib_version = '1.2.9'
 group = "com.github.wandersnail"
 version = lib_version
 
