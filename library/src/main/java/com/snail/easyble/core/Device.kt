@@ -61,7 +61,7 @@ open class Device constructor(val originalDevice: BluetoothDevice) : Comparable<
         } else if (other.rssi == 0) {
             return 1
         } else {
-            result = Integer.compare(other.rssi, rssi)
+            result = other.rssi.compareTo(rssi)
             if (result == 0) {
                 result = name.compareTo(other.name)
             }
