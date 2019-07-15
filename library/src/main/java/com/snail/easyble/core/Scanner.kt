@@ -102,9 +102,11 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
                         return
                     }
                 }
-                proxy?.connectedDevices?.forEach {
-                    parseScanResult(it, 0, null, null)
-                }
+                try {
+                    proxy?.connectedDevices?.forEach {
+                        parseScanResult(it, 0, null, null)
+                    }
+                } catch (e: Exception) {}
             }
         }, profile)
     }
@@ -195,6 +197,7 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         for (i in 0 until size) {
             bluetoothAdapter.closeProfileProxy(proxyBluetoothProfiles.keyAt(i), proxyBluetoothProfiles.valueAt(i))
         }
+        proxyBluetoothProfiles.clear()
         if (!bluetoothAdapter.isEnabled) {
             return
         }
