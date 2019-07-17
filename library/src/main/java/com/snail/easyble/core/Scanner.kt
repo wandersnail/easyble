@@ -195,7 +195,9 @@ internal class Scanner(private val bluetoothAdapter: BluetoothAdapter, private v
         mainThreadHandler.removeCallbacks(stopScanRunnable)
         val size = proxyBluetoothProfiles.size()
         for (i in 0 until size) {
-            bluetoothAdapter.closeProfileProxy(proxyBluetoothProfiles.keyAt(i), proxyBluetoothProfiles.valueAt(i))
+            try {
+                bluetoothAdapter.closeProfileProxy(proxyBluetoothProfiles.keyAt(i), proxyBluetoothProfiles.valueAt(i))
+            } catch (e: Exception) {}
         }
         proxyBluetoothProfiles.clear()
         if (!bluetoothAdapter.isEnabled) {

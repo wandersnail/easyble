@@ -135,8 +135,7 @@ object BleUtils {
                 var length = buffer.get().toInt()
                 if (length == 0) break
 
-                val type = buffer.get().toInt()
-                when (type) {
+                when (buffer.get().toInt()) {
                     0x02, // Partial list of 16-bit UUIDs
                     0x03, // Complete list of 16-bit UUIDs
                     0x14 // List of 16-bit Service Solicitation UUIDs    
