@@ -144,7 +144,7 @@ deps.rxjava2 = rxjava2
 ext.deps = deps
 
 static def addRepos(RepositoryHandler handler) {
-	handler.maven { url 'http://maven.aliyun.com/nexus/content/groups/public' }
+	handler.maven { url 'https://maven.aliyun.com/repository/public' }
     handler.google()
     handler.jcenter()
     handler.mavenCentral()
