@@ -172,4 +172,9 @@ object BleUtils {
         }
         return false
     }
+
+    @JvmStatic
+    fun main(args: Array<String>) {
+        println(generateFromBaseUuid(234234230903L))
+    }
 }

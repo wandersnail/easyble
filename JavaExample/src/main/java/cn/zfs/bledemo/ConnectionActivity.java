@@ -5,32 +5,17 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
 import android.widget.TextView;
-
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import com.snail.commons.utils.StringUtilsKt;
 import com.snail.commons.utils.ToastUtils;
 import com.snail.easyble.annotation.InvokeThread;
 import com.snail.easyble.annotation.RunOn;
-import com.snail.easyble.callback.CharacteristicChangedCallback;
-import com.snail.easyble.callback.CharacteristicReadCallback;
-import com.snail.easyble.callback.CharacteristicWriteCallback;
-import com.snail.easyble.callback.MtuChangedCallback;
-import com.snail.easyble.callback.NotificationChangedCallback;
-import com.snail.easyble.callback.RemoteRssiReadCallback;
-import com.snail.easyble.core.Ble;
-import com.snail.easyble.core.Connection;
-import com.snail.easyble.core.ConnectionConfig;
-import com.snail.easyble.core.Device;
-import com.snail.easyble.core.EventObserver;
-import com.snail.easyble.core.IConnection;
-import com.snail.easyble.core.Request;
-import com.snail.easyble.core.SimpleEventObserver;
-
+import com.snail.easyble.callback.*;
+import com.snail.easyble.core.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
-
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * date: 2019/5/31 18:24
@@ -50,7 +35,7 @@ public class ConnectionActivity extends AppCompatActivity {
 
     private void assignViews() {
         tvName = findViewById(R.id.tvName);
-        tvAddr = findViewById(R.id.tvAddr);
+        tvAddr = findViewById(R.id.tvAddr); 
         tvState = findViewById(R.id.tvState);
     }
 

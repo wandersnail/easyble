@@ -654,9 +654,9 @@ abstract class BaseConnection internal constructor(val device: Device, protected
 
     private fun executeSetPreferredPhy(request: Request) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val txPhy = BleUtils.bytesToLong(false, *Arrays.copyOfRange(request.value, 0, 4)).toInt()
-            val rxPhy = BleUtils.bytesToLong(false, *Arrays.copyOfRange(request.value, 4, 8)).toInt()
-            val phyOptions = BleUtils.bytesToLong(false, *Arrays.copyOfRange(request.value, 8, 12)).toInt()
+            val txPhy = BleUtils.bytesToLong(false, *Arrays.copyOfRange(request.value!!, 0, 4)).toInt()
+            val rxPhy = BleUtils.bytesToLong(false, *Arrays.copyOfRange(request.value!!, 4, 8)).toInt()
+            val phyOptions = BleUtils.bytesToLong(false, *Arrays.copyOfRange(request.value!!, 8, 12)).toInt()
             bluetoothGatt!!.setPreferredPhy(txPhy, rxPhy, phyOptions)
         }
     }

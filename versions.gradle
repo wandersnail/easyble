@@ -102,7 +102,7 @@ deps.glide = glide
 
 def build_versions = [:]
 build_versions.min_sdk = 21
-build_versions.target_sdk = 29
+build_versions.target_sdk = 28
 ext.build_versions = build_versions
 
 def navigation = [:]

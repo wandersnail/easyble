@@ -64,7 +64,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
             MSG_RELEASE //释放连接
             -> {
                 config.setAutoReconnect(false) //停止自动重连
-                doDisconnect(false, msg.arg1 == MSG_ARG_NOTIFY)
+                doDisconnect(false, msg.arg1 == MSG_ARG_NOTIFY, msg.arg2 == MSG_ARG_RELEASE)
             }
             MSG_TIMER
             -> doTimer()
@@ -243,7 +243,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         }
     }
 
-    private fun doDisconnect(reconnect: Boolean, notify: Boolean = true) {
+    private fun doDisconnect(reconnect: Boolean, notify: Boolean = true, release: Boolean = false) {
         clearRequestQueueAndNotify()
         connHandler.removeCallbacks(connectRunnable)
         connHandler.removeMessages(MSG_DISCOVER_SERVICES)
@@ -252,7 +252,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
             bluetoothGatt = null
         }
         device.connectionState = IConnection.STATE_DISCONNECTED
-        if (isReleased) {
+        if (release) {
             device.connectionState = IConnection.STATE_RELEASED
             super.release()
             Ble.instance.logger.handleLog(Log.DEBUG, "connection released! [name: ${device.name}, addr: ${device.addr}]", BleLogger.TYPE_CONNECTION_STATE)
@@ -349,16 +349,16 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
      * 销毁连接，停止定时器
      */
     override fun release() {
-        super.release()
-        Message.obtain(connHandler, MSG_RELEASE, MSG_ARG_NOTIFY, 0).sendToTarget()
+        Message.obtain(connHandler, MSG_RELEASE, MSG_ARG_NOTIFY, MSG_ARG_RELEASE).sendToTarget()
+        connHandler.post { super.release() }
     }
 
     /**
      * 销毁连接，停止定时器，不通过观察者
      */
     fun releaseNoEvnet() {
-        super.release()
-        Message.obtain(connHandler, MSG_RELEASE, MSG_ARG_NONE, 0).sendToTarget()
+        Message.obtain(connHandler, MSG_RELEASE, MSG_ARG_NONE, MSG_ARG_RELEASE).sendToTarget()
+        connHandler.post { super.release() }
     }
 
     override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
@@ -441,6 +441,7 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
         private const val MSG_ARG_NONE = 0
         private const val MSG_ARG_RECONNECT = 1
         private const val MSG_ARG_NOTIFY = 2
+        private const val MSG_ARG_RELEASE = 3
 
         /**
          * 创建新的连接

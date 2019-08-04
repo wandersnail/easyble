@@ -1,6 +1,7 @@
 package com.snail.easyble.core
 
 import android.os.Handler
+import android.os.Looper
 import com.snail.easyble.annotation.InvokeThread
 import com.snail.easyble.annotation.RunOn
 import java.lang.reflect.Method
@@ -18,7 +19,13 @@ internal class MethodPoster(private val executorService: ExecutorService, privat
         if (method != null) {
             val invokeThreadAnno = method.getAnnotation(InvokeThread::class.java)
             when (invokeThreadAnno?.value ?: Ble.instance.bleConfig.methodDefaultInvokeThread) {
-                RunOn.MAIN -> mainHandler.post(runnable)
+                RunOn.MAIN -> {
+                    if (Looper.myLooper() == Looper.getMainLooper()) { //判断是否在主线程
+                        runnable.run()
+                    } else {
+                        mainHandler.post { runnable.run() }
+                    }
+                }
                 RunOn.BACKGROUND -> executorService.execute(runnable)
                 else -> runnable.run()
             }
