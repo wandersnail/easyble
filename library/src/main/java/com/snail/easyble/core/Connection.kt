@@ -350,7 +350,6 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
      */
     override fun release() {
         Message.obtain(connHandler, MSG_RELEASE, MSG_ARG_NOTIFY, MSG_ARG_RELEASE).sendToTarget()
-        connHandler.post { super.release() }
     }
 
     /**
@@ -358,7 +357,6 @@ class Connection private constructor(device: Device, bluetoothDevice: BluetoothD
      */
     fun releaseNoEvnet() {
         Message.obtain(connHandler, MSG_RELEASE, MSG_ARG_NONE, MSG_ARG_RELEASE).sendToTarget()
-        connHandler.post { super.release() }
     }
 
     override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {

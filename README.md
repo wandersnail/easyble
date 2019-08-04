@@ -1,4 +1,4 @@
-# Android BLE开发框架
+# 发现还有挺多人不知道怎么用kotlin，所有用java重构了，这个库就不维护了。[点击跳转新库](https://github.com/wandersnail/easyble2)
 
 [English](https://github.com/wandersnail/easyble/blob/master/README_EN.md)
 

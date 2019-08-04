@@ -1,3 +1,5 @@
+# 发现还有挺多人不知道怎么用kotlin，所有用java重构了，这个库就不维护了。[点击跳转新库](https://github.com/wandersnail/easyble2)
+
 # A framework for Android BLE
 
 [中文文档](https://github.com/wandersnail/easyble/blob/master/README.md)
