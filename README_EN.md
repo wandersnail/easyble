@@ -7,7 +7,6 @@
 ## Lastest version
 [![](https://jitpack.io/v/wandersnail/easyble.svg)](https://jitpack.io/#wandersnail/easyble)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.wandersnail/easyble/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.wandersnail/easyble)
-[![Download](https://api.bintray.com/packages/wandersnail/android/easyble/images/download.svg) ](https://bintray.com/wandersnail/android/easyble/_latestVersion)
 
 ## Features
 - Support multi-device simultaneous connection
