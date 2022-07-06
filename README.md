@@ -2,6 +2,9 @@
 
 [English](https://github.com/wandersnail/easyble/blob/master/README_EN.md)
 
+## 学习提高
+[![](https://img.shields.io/badge/下载-java、python、vue、js、c++等各种视频教程-blue.svg)](https://p.zhekou.life)
+
 ## 最新版本
 [![](https://jitpack.io/v/wandersnail/easyble.svg)](https://jitpack.io/#wandersnail/easyble)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.wandersnail/easyble/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.wandersnail/easyble)
