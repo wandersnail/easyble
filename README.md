@@ -2,8 +2,30 @@
 
 [English](https://github.com/wandersnail/easyble/blob/master/README_EN.md)
 
-## 学习提高
-[![](https://img.shields.io/badge/下载-java、python、vue、js、c++等各种视频教程-blue.svg)](https://p.zhekou.life)
+## 推荐一款蓝牙调试APP【蓝牙工坊】
+
+> 面向硬件工程师、嵌入式开发者、电子爱好者的蓝牙调试工具，同时支持BLE低功耗蓝牙与SPP串口蓝牙，一站式完成蓝牙设备测试。各大应用市场搜索【蓝牙工坊】安装即可。
+
+<div align="center">
+    <img src="https://s41.ax1x.com/2026/09/11/pneuhmd.png" width=150>
+    <img src="https://s41.ax1x.com/2026/09/11/pneuWOH.png" width=150>
+    <img src="https://s41.ax1x.com/2026/09/11/pneu5TI.png" width=150>
+    <img src="https://s41.ax1x.com/2026/09/11/pneu40A.png" width=150>
+</div>
+
+✅ 实时日志打印，数据秒级展示，支持日志持久化本地保存，调试过程数据不丢失；
+
+✅ 支持多蓝牙设备同时连接，并行收发数据；
+
+✅ 自定义快捷按键，预设指令，一键下发写入数据，省去重复输入；
+
+✅ 日志一键导出、分享，快速保存调试记录，方便复盘、联调沟通；
+
+适合蓝牙模块、单片机、传感器、智能硬件开发调试，无需电脑，手机即可快速完成蓝牙收发调试。
+
+点击下方按钮【蓝牙工坊】
+
+[![](https://img.shields.io/badge/下载-%E8%93%9D%E7%89%99%E5%B7%A5%E5%9D%8A-blue.svg)](https://www.pgyer.com/lanyagongfang)
 
 ## 最新版本
 [![](https://jitpack.io/v/wandersnail/easyble.svg)](https://jitpack.io/#wandersnail/easyble)
